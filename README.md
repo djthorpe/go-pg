@@ -1,3 +1,5 @@
 # go-pg
 
-Postgresql Support
+Postgresql Support for Go
+
+Documentation: <https://pkg.go.dev/github.com/djthorpe/go-pg>
