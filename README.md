@@ -100,3 +100,48 @@ func main() {
 The options that can be passed to `pg.NewPool` are:
 
 TODO
+
+## Executing Statements and Transactions
+
+* Executing Statements
+* Binding Named Arguments
+* Replacing Named Arguments
+* Executing Transactions
+
+## Implementing Get
+
+TODO
+
+## Implementing List
+
+TODO
+
+## Implementing Insert
+
+TODO
+
+## Implementing Patch
+
+TODO
+
+## Implementing Delete
+
+TODO
+
+## Notify and Listen
+
+TODO
+
+## Schema Support
+
+* Checking if a schema exists
+* Creating a schema
+* Dropping a schema
+
+## Error Handing and Tracing
+
+TODO
+
+## Testing Support
+
+TODO
