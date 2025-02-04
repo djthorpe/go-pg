@@ -228,7 +228,72 @@ func (obj MyObject) Select(bind *pg.Bind, op pg.Op) (string, error) {
 
 ## Implementing List
 
-TODO
+You may wish to use paging to list rows from a table. The `List` operation is used to
+list rows from a table, with offset and limit parameters. 
+The http handler may look like this:
+
+```go
+func ListHandler(w http.ResponseWriter, r *http.Request) {
+  var conn pg.Conn
+
+  // ....Set pool....
+
+  // Get up to 10 rows
+  var response MyList
+  if err := conn.List(ctx, &response, MyListRequest{Offset: 0, Limit: 10}); err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  // Write the row to the response - TODO: Add Content-Type header
+  json.NewEncoder(w).Encode(response)
+}
+
+```
+
+The implementation of MyList and MyListRequest may look like this:
+
+```go
+type MyListRequest struct {
+  Offset uint64
+  Limit uint64
+}
+
+type MyList struct {
+  Count uint64
+  Names []string
+}
+
+// Reader - note this needs to be a pointer receiver
+func (obj *MyList) Scan(row pg.Row) error {
+  var name string
+  if err := row.Scan(&name); err != nil {
+    return err
+  }
+  obj = append(obj, row.String())
+  return nil
+}
+
+// ListReader - optional interface to scan count of all rows
+func (obj MyList) Scan(row pg.Row) error {
+ return row.Scan(&obj.Count)
+}
+
+// Selector - select rows from database. Use bind variables
+// offsetlimit, groupby and orderby to filter the selected rows.
+func (obj MyListRequest) Select(bind *pg.Bind, op pg.Op) (string, error) {
+  bind.Set("offsetlimit", fmt.Sprintf("OFFSET %v LIMIT %v",obj.Offset,obj.Limit))
+  switch op {
+  case pg.List:
+    return `SELECT name FROM mytable`, nil
+  default:
+    return "", fmt.Errorf("Unsupported operation: ",op)
+  }
+}
+```
+
+You can of course use a `WHERE` clause in your query to filter the rows returned from
+the table. Always implement the `offsetlimit` as a bind variable.
 
 ## Implementing Insert
 
