@@ -15,6 +15,11 @@ type Name struct {
 	Frequency uint64 `json:"frequency"`
 }
 
+type NameList struct {
+	Count uint64  `json:"count"`
+	Names []*Name `json:"names"`
+}
+
 // Create a new name from the CSV file which consists of three cells
 // name, gender, frequency
 func NewName(cells ...string) *Name {
@@ -46,6 +51,31 @@ func (obj Name) String() string {
 // Reader - bind to object
 func (obj *Name) Scan(row pg.Row) error {
 	return row.Scan(&obj.Id, &obj.Name, &obj.Gender, &obj.Frequency)
+}
+
+func (list *NameList) Scan(row pg.Row) error {
+	var obj Name
+	if err := row.Scan(&obj.Id, &obj.Name, &obj.Gender, &obj.Frequency); err != nil {
+		return err
+	} else {
+		list.Names = append(list.Names, &obj)
+	}
+	return nil
+}
+
+// Bind count
+func (list *NameList) ScanCount(row pg.Row) error {
+	return row.Scan(&list.Count)
+}
+
+// Selector - select rows from database
+func (list NameList) Select(bind *pg.Bind, op pg.Op) (string, error) {
+	switch op {
+	case pg.List:
+		return `SELECT id, name, gender, frequency FROM names`, nil
+	default:
+		return "", fmt.Errorf("Unsupported operation: %q", op)
+	}
 }
 
 // Selector - select rows from database

@@ -33,8 +33,8 @@ func RegisterHandlers(router *http.ServeMux, conn pg.Conn) http.Handler {
 	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		// Call handler
 		switch r.Method {
-		case http.MethodPost:
-			PostHandler(w, r, conn)
+		//case http.MethodPost:
+		//	PostHandler(w, r, conn)
 		case http.MethodGet:
 			ListHandler(w, r, conn)
 		default:
@@ -43,6 +43,20 @@ func RegisterHandlers(router *http.ServeMux, conn pg.Conn) http.Handler {
 	})
 
 	return router
+}
+
+// GET /
+func ListHandler(w http.ResponseWriter, r *http.Request, conn pg.Conn) {
+	var response NameList
+	if err := conn.List(r.Context(), &response, NameList{}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }
 
 // GET /{id}
@@ -82,27 +96,4 @@ func PatchHandler(w http.ResponseWriter, r *http.Request, conn pg.Conn, id uint6
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
-}
-
-// POST /
-func PostHandler(w http.ResponseWriter, r *http.Request, conn pg.Conn) {
-
-	// Response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}
-
-// DELETE /{id}
-func DeleteHandler(w http.ResponseWriter, r *http.Request, conn pg.Conn, id uint64) {
-	if err := conn.Delete(r.Context(), nil, Name{Id: id}); errors.Is(err, pg.ErrNotFound) {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Empty response
-	w.WriteHeader(http.StatusNoContent)
 }
