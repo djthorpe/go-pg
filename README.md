@@ -205,7 +205,7 @@ type MyObject struct {
 }
 
 // Reader - bind to object
-func (obj MyObject) Scan(row pg.Row) error {
+func (obj *MyObject) Scan(row pg.Row) error {
   return row.Scan(&obj.Id, &obj.Name)
 }
 
