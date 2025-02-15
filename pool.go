@@ -125,6 +125,11 @@ func (p *poolconn) Tx(ctx context.Context, fn func(conn Conn) error) error {
 	return tx(ctx, p.conn, p.bind, fn)
 }
 
+// Perform a bulk operation
+func (p *poolconn) Bulk(ctx context.Context, fn func(conn Conn) error) error {
+	return bulk(ctx, p.conn, p.bind, fn)
+}
+
 // Execute a query
 func (p *poolconn) Exec(ctx context.Context, query string) error {
 	return p.bind.Exec(ctx, p.conn, query)
@@ -135,9 +140,9 @@ func (p *poolconn) Insert(ctx context.Context, reader Reader, writer Writer) err
 	return insert(ctx, p.conn, p.bind, reader, writer)
 }
 
-// Perform a patch
-func (p *poolconn) Patch(ctx context.Context, reader Reader, sel Selector, writer Writer) error {
-	return patch(ctx, p.conn, p.bind, reader, sel, writer)
+// Perform a update
+func (p *poolconn) Update(ctx context.Context, reader Reader, sel Selector, writer Writer) error {
+	return update(ctx, p.conn, p.bind, reader, sel, writer)
 }
 
 // Perform a delete

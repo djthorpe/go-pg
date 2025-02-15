@@ -29,7 +29,7 @@ more of the following interfaces:
 ```go
 type Selector interface {
   // Bind row selection variables, returning the SQL statement required for the operation
-  // The operation can be Get, Patch, Delete or List
+  // The operation can be Get, Update, Delete or List
   Select(*Bind, Op) (string, error)
 }
 ```
@@ -62,11 +62,11 @@ A type which implements a `ListReader` interface can be used to scan the count o
 
 ```go
 type Writer interface {
-  // Bind insert variables, returning the SQL statement required for the insert
+  // Bind insert parameters, returning the SQL statement required for the insert
   Insert(*Bind) (string, error)
 
-  // Bind patch variables
-  Patch(*Bind) error
+  // Bind update parameters
+  Update(*Bind) error
 }
 ```
 
@@ -99,22 +99,201 @@ func main() {
 
 The options that can be passed to `pg.NewPool` are:
 
-TODO
+* `WithCredentials(string,string)` - Set connection pool username and password.
+  If the database name is not set, then the username will be used as the default database name.
+* `WithDatabase(string)` - Set the database name for the connection. If the user name is not set,
+  then the database name will be used as the user name.
+* `WithAddr(string)` - Set the address (host) or (host:port) for the connection
+* `WithHostPort(string, string)` - Set the hostname and port for the
+  connection. If the port is not set, then the default port 5432 will be used.
+* `WithSSLMode( string)` - Set the SSL connection mode. Valid values are
+  "disable", "allow", "prefer", "require",  "verify-ca", "verify-full". See
+  <https://www.postgresql.org/docs/current/libpq-ssl.html> for more information.
+* `pg.WithTrace(pg.TraceFn)` -  Set the trace function for the connection pool.
+  The signature of the trace unction is
+  `func(ctx context.Context, sql string, args any, err error)`
+  and is called for every query executed by the connection pool.
+* `pg.WithBind(string,any)` - Set the bind variable to a value the
+  the lifetime of the connection.
 
-## Executing Statements and Transactions
+## Executing Statements
 
-* Executing Statements
-* Binding Named Arguments
-* Replacing Named Arguments
-* Executing Transactions
+To simply execute a statement, use the `Exec` call:
+
+```go
+  if err := pool.Exec(ctx, `CREATE TABLE test (id SERIAL PRIMARY KEY, name TEXT)`); err != nil {
+    panic(err)
+  }
+```
+
+You can use `bind variables` to bind named arguments to a statement. Within the statement, the
+following formats are replaced with bound values:
+
+* `${"name"}` - Replace with the value of the named argument "name", double-quoted string
+* `${'name'}` - Replace with the value of the named argument "name", single-quoted string
+* `${name}` - Replace with the value of the named argument "name", unquoted string
+* `$$` - Pass a literal dollar sign
+* `@name` - Pass by bound variable parameter
+
+For example,
+
+```go
+  var name string
+  // ...
+  if err := pool.With("table", "test", "name", name).Exec(ctx, `INSERT INTO ${"table"} (name) VALUES (@name)`); err != nil {
+    panic(err)
+  }
+```
+
+This will re-use or create a new database connection from the connection, pool, bind the named arguments, replace
+the named arguments in the statement, and execute the statement.
+
+## Transactions
+
+Transactions are executed within a function called `Tx`. For example,
+
+```go
+  if err := pool.Tx(ctx, func(tx pg.Tx) error {
+    if err := tx.Exec(ctx, `CREATE TABLE test (id SERIAL PRIMARY KEY, name TEXT)`); err != nil {
+      return err
+    }
+    if err := tx.Exec(ctx, `INSERT INTO test (name) VALUES ('hello')`); err != nil {
+      return err
+    }
+    return nil
+  }); err != nil {
+    panic(err)
+  }
+```
+
+Any error returned from the function will cause the transaction to be rolled back. If the function returns `nil`, then
+the transaction will be committed. Transactions can be nested.
 
 ## Implementing Get
 
-TODO
+If you have a http handler which needs to get a row from a table, you can implement a `Selector` interface. Your
+http handler may look like this:
+
+```go
+func GetHandler(w http.ResponseWriter, r *http.Request) {
+  var conn pg.Conn
+  var id int
+
+  // ....Set pool and id....
+
+  // Get the row from the database
+  var response MyObject
+  if err := conn.Get(ctx, &response, MyObject{ Id: id }); errors.Is(err, pg.ErrNotFound) {
+    http.Error(w, err.Error(), http.StatusNotFound)
+    return    
+  } else if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  // Write the row to the response - TODO: Add Content-Type header
+  json.NewEncoder(w).Encode(response)
+}
+```
+
+The implementation of MyObject may look like this:
+
+```go
+type MyObject struct {
+  Id int
+  Name string
+}
+
+// Reader - bind to object
+func (obj *MyObject) Scan(row pg.Row) error {
+  return row.Scan(&obj.Id, &obj.Name)
+}
+
+// Selector - select rows from database
+func (obj MyObject) Select(bind *pg.Bind, op pg.Op) (string, error) {
+  // Bind id variable
+  if obj.Id == 0 {
+    return "", fmt.Errorf("Id is zero")
+  } else {
+    bind.Set("id", obj.Id)
+  }
+  switch op {
+  case pg.Get:
+    return `SELECT id, name FROM mytable WHERE id=@id`, nil
+  default:
+    return "", fmt.Errorf("Unsupported operation: ",op)
+  }
+}
+```
 
 ## Implementing List
 
-TODO
+You may wish to use paging to list rows from a table. The `List` operation is used to
+list rows from a table, with offset and limit parameters. 
+The http handler may look like this:
+
+```go
+func ListHandler(w http.ResponseWriter, r *http.Request) {
+  var conn pg.Conn
+
+  // ....Set pool....
+
+  // Get up to 10 rows
+  var response MyList
+  if err := conn.List(ctx, &response, MyListRequest{Offset: 0, Limit: 10}); err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  // Write the row to the response - TODO: Add Content-Type header
+  json.NewEncoder(w).Encode(response)
+}
+
+```
+
+The implementation of MyList and MyListRequest may look like this:
+
+```go
+type MyListRequest struct {
+  Offset uint64
+  Limit uint64
+}
+
+type MyList struct {
+  Count uint64
+  Names []string
+}
+
+// Reader - note this needs to be a pointer receiver
+func (obj *MyList) Scan(row pg.Row) error {
+  var name string
+  if err := row.Scan(&name); err != nil {
+    return err
+  }
+  obj = append(obj, row.String())
+  return nil
+}
+
+// ListReader - optional interface to scan count of all rows
+func (obj MyList) Scan(row pg.Row) error {
+ return row.Scan(&obj.Count)
+}
+
+// Selector - select rows from database. Use bind variables
+// offsetlimit, groupby and orderby to filter the selected rows.
+func (obj MyListRequest) Select(bind *pg.Bind, op pg.Op) (string, error) {
+  bind.Set("offsetlimit", fmt.Sprintf("OFFSET %v LIMIT %v",obj.Offset,obj.Limit))
+  switch op {
+  case pg.List:
+    return `SELECT name FROM mytable`, nil
+  default:
+    return "", fmt.Errorf("Unsupported operation: ",op)
+  }
+}
+```
+
+You can of course use a `WHERE` clause in your query to filter the rows returned from
+the table. Always implement the `offsetlimit` as a bind variable.
 
 ## Implementing Insert
 

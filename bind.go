@@ -192,6 +192,16 @@ func (bind *Bind) Exec(ctx context.Context, conn pgx.Tx, query string) error {
 	return err
 }
 
+// Queue a query
+func (bind *Bind) queuerow(batch *pgx.Batch, query string, reader Reader) {
+	bind.RLock()
+	defer bind.RUnlock()
+	queuedquery := batch.Queue(bind.Replace(query), bind.vars)
+	queuedquery.QueryRow(func(row pgx.Row) error {
+		return reader.Scan(row)
+	})
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
