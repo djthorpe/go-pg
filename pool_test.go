@@ -47,7 +47,7 @@ func Test_Pool_002(t *testing.T) {
 
 	// Update a row
 	test.Name = "Hello, World"
-	assert.NoError(conn.Patch(context.Background(), &test, test, test))
+	assert.NoError(conn.Update(context.Background(), &test, test, test))
 	assert.NotEqual(0, test.Id)
 	assert.Equal("Hello, World", test.Name)
 
@@ -97,7 +97,7 @@ func Test_Pool_003(t *testing.T) {
 
 		// Update a row
 		test.Name = "Hello, World"
-		assert.NoError(conn.Patch(context.Background(), &test, test, test))
+		assert.NoError(conn.Update(context.Background(), &test, test, test))
 		assert.NotEqual(0, test.Id)
 		assert.Equal("Hello, World", test.Name)
 
@@ -174,7 +174,7 @@ func (t Test) Insert(bind *pg.Bind) (string, error) {
 func (t Test) Select(bind *pg.Bind, op pg.Op) (string, error) {
 	bind.Set("id", t.Id)
 	switch op {
-	case pg.Patch:
+	case pg.Update:
 		return "UPDATE test SET ${patch} WHERE id=@id RETURNING id, name", nil
 	case pg.Get:
 		return "SELECT id, name FROM test WHERE id=@id", nil
@@ -194,7 +194,7 @@ func (t TestList) Select(bind *pg.Bind, op pg.Op) (string, error) {
 	}
 }
 
-func (t Test) Patch(bind *pg.Bind) error {
+func (t Test) Update(bind *pg.Bind) error {
 	bind.Set("patch", `name=`+bind.Set("name", t.Name))
 	return nil
 }

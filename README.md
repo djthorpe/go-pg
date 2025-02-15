@@ -29,7 +29,7 @@ more of the following interfaces:
 ```go
 type Selector interface {
   // Bind row selection variables, returning the SQL statement required for the operation
-  // The operation can be Get, Patch, Delete or List
+  // The operation can be Get, Update, Delete or List
   Select(*Bind, Op) (string, error)
 }
 ```
@@ -62,11 +62,11 @@ A type which implements a `ListReader` interface can be used to scan the count o
 
 ```go
 type Writer interface {
-  // Bind insert variables, returning the SQL statement required for the insert
+  // Bind insert parameters, returning the SQL statement required for the insert
   Insert(*Bind) (string, error)
 
-  // Bind patch variables
-  Patch(*Bind) error
+  // Bind update parameters
+  Update(*Bind) error
 }
 ```
 

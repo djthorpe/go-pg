@@ -13,16 +13,18 @@ type Name struct {
 	Name      string `json:"name"`
 	Gender    string `json:"gender"`
 	Frequency uint64 `json:"frequency"`
+	Year      uint64 `json:"year"`
 }
 
 type NameList struct {
+	pg.OffsetLimit
 	Count uint64  `json:"count"`
 	Names []*Name `json:"names"`
 }
 
 // Create a new name from the CSV file which consists of three cells
 // name, gender, frequency
-func NewName(cells ...string) *Name {
+func NewName(year uint64, cells ...string) *Name {
 	if len(cells) != 3 {
 		return nil
 	}
@@ -36,6 +38,7 @@ func NewName(cells ...string) *Name {
 		Name:      name,
 		Gender:    gender,
 		Frequency: frequency,
+		Year:      year,
 	}
 }
 
@@ -50,12 +53,12 @@ func (obj Name) String() string {
 
 // Reader - bind to object
 func (obj *Name) Scan(row pg.Row) error {
-	return row.Scan(&obj.Id, &obj.Name, &obj.Gender, &obj.Frequency)
+	return row.Scan(&obj.Id, &obj.Name, &obj.Gender, &obj.Frequency, &obj.Year)
 }
 
 func (list *NameList) Scan(row pg.Row) error {
 	var obj Name
-	if err := row.Scan(&obj.Id, &obj.Name, &obj.Gender, &obj.Frequency); err != nil {
+	if err := row.Scan(&obj.Id, &obj.Name, &obj.Gender, &obj.Frequency, &obj.Year); err != nil {
 		return err
 	} else {
 		list.Names = append(list.Names, &obj)
@@ -72,7 +75,7 @@ func (list *NameList) ScanCount(row pg.Row) error {
 func (list NameList) Select(bind *pg.Bind, op pg.Op) (string, error) {
 	switch op {
 	case pg.List:
-		return `SELECT id, name, gender, frequency FROM names`, nil
+		return `SELECT id, name, gender, frequency, year FROM names`, nil
 	default:
 		return "", fmt.Errorf("Unsupported operation: %q", op)
 	}
@@ -83,9 +86,9 @@ func (obj Name) Select(bind *pg.Bind, op pg.Op) (string, error) {
 	bind.Set("id", obj.Id)
 	switch op {
 	case pg.Get:
-		return `SELECT id, name, gender, frequency FROM names WHERE id=@id`, nil
-	case pg.Patch:
-		return `UPDATE names SET @patch WHERE id=@id RETURNING id, name, gender, frequency`, nil
+		return `SELECT id, name, gender, frequency, year FROM names WHERE id=@id`, nil
+	case pg.Update:
+		return `UPDATE names SET @patch WHERE id=@id RETURNING id, name, gender, frequency, year`, nil
 	default:
 		return "", fmt.Errorf("Unsupported operation: %q", op)
 	}
@@ -96,11 +99,12 @@ func (obj Name) Insert(bind *pg.Bind) (string, error) {
 	bind.Set("name", obj.Name)
 	bind.Set("gender", obj.Gender)
 	bind.Set("frequency", obj.Frequency)
-	return `INSERT INTO names (name, gender, frequency) VALUES (@name, @gender, @frequency) RETURNING id, name, gender, frequency`, nil
+	bind.Set("year", obj.Year)
+	return `INSERT INTO names (name, gender, frequency, year) VALUES (@name, @gender, @frequency, @year) RETURNING id, name, gender, frequency, year`, nil
 }
 
 // Writer - patch object
-func (obj Name) Patch(bind *pg.Bind) error {
+func (obj Name) Update(bind *pg.Bind) error {
 	// Reset the patch parameters
 	bind.Del("patch")
 
@@ -113,6 +117,9 @@ func (obj Name) Patch(bind *pg.Bind) error {
 	}
 	if obj.Frequency != 0 {
 		bind.Append("patch", `frequency=`+bind.Set("frequency", obj.Frequency))
+	}
+	if obj.Year != 0 {
+		bind.Append("patch", `year=`+bind.Set("year", obj.Year))
 	}
 
 	// If nothing was patched, then return an error

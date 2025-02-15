@@ -25,12 +25,12 @@ func main() {
 	defer container.Close(context.Background())
 
 	// Create the 'names' table
-	if err := conn.Exec(ctx, "CREATE TABLE names (id SERIAL PRIMARY KEY, name TEXT, gender TEXT, frequency INT)"); err != nil {
+	if err := conn.Exec(ctx, "CREATE TABLE names (id SERIAL PRIMARY KEY, name TEXT, gender TEXT, frequency INT, year INT)"); err != nil {
 		panic(err)
 	}
 
 	// Import data
-	if err := ingest(ctx, "https://www.ssa.gov/oact/babynames/names.zip", conn); err != nil {
+	if _, err := ingest(ctx, "https://www.ssa.gov/oact/babynames/names.zip", conn); err != nil {
 		panic(err)
 	}
 

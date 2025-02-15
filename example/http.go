@@ -7,8 +7,11 @@ import (
 	"strconv"
 
 	// Packages
-	"github.com/djthorpe/go-pg"
+	pg "github.com/djthorpe/go-pg"
 )
+
+/////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS
 
 func RegisterHandlers(router *http.ServeMux, conn pg.Conn) http.Handler {
 	router.HandleFunc("/{id}", func(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +59,10 @@ func ListHandler(w http.ResponseWriter, r *http.Request, conn pg.Conn) {
 	// Response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	encoder.Encode(response)
 }
 
 // GET /{id}
@@ -84,7 +90,7 @@ func PatchHandler(w http.ResponseWriter, r *http.Request, conn pg.Conn, id uint6
 	}
 
 	var response Name
-	if err := conn.Patch(r.Context(), &response, request, request); errors.Is(err, pg.ErrNotFound) {
+	if err := conn.Update(r.Context(), &response, request, request); errors.Is(err, pg.ErrNotFound) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	} else if err != nil {

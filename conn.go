@@ -16,7 +16,11 @@ type Conn interface {
 	With(...any) Conn
 
 	// Perform a transaction within a function
-	Tx(context.Context, func(conn Conn) error) error
+	Tx(context.Context, func(Conn) error) error
+
+	// Perform a bulk operation within a function (and indicate whether this
+	// should be in a transaction)
+	Bulk(context.Context, func(Conn) error) error
 
 	// Execute a query
 	Exec(context.Context, string) error
@@ -24,8 +28,8 @@ type Conn interface {
 	// Perform an insert
 	Insert(context.Context, Reader, Writer) error
 
-	// Perform a patch
-	Patch(context.Context, Reader, Selector, Writer) error
+	// Perform an update
+	Update(context.Context, Reader, Selector, Writer) error
 
 	// Perform a delete
 	Delete(context.Context, Reader, Selector) error
@@ -58,18 +62,18 @@ type ListReader interface {
 	ScanCount(Row) error
 }
 
-// Bind an object to bind parameters for inserting or patching
+// Bind an object to bind parameters for inserting or updating
 type Writer interface {
 	// Set bind parameters for an insert
 	Insert(*Bind) (string, error)
 
-	// Set bind parameters for a patch (update)
-	Patch(*Bind) error
+	// Set bind parameters for an update
+	Update(*Bind) error
 }
 
-// Bind selection parameters for getting, patching or deleting
+// Bind selection parameters for getting, updating or deleting
 type Selector interface {
-	// Set bind parameters for getting, patching or deleting
+	// Set bind parameters for getting, updating or deleting
 	Select(*Bind, Op) (string, error)
 }
 
@@ -90,7 +94,7 @@ const (
 	None Op = iota
 	Get
 	Insert
-	Patch
+	Update
 	Delete
 	List
 )
@@ -101,8 +105,8 @@ func (o Op) String() string {
 		return "GET"
 	case Insert:
 		return "INSERT"
-	case Patch:
-		return "PATCH"
+	case Update:
+		return "UPDATE"
 	case Delete:
 		return "DELETE"
 	case List:
@@ -120,8 +124,14 @@ func (p *conn) With(params ...any) Conn {
 }
 
 // Perform a transaction, then commit or rollback
-func (p *conn) Tx(ctx context.Context, fn func(conn Conn) error) error {
+func (p *conn) Tx(ctx context.Context, fn func(Conn) error) error {
 	return tx(ctx, p.conn, p.bind, fn)
+}
+
+// Perform a bulk operation and indicate whether this should be in
+// a transaction
+func (p *conn) Bulk(ctx context.Context, fn func(Conn) error) error {
+	return bulk(ctx, p.conn, p.bind, fn)
 }
 
 // Execute a query
@@ -135,10 +145,10 @@ func (p *conn) Insert(ctx context.Context, reader Reader, writer Writer) error {
 	return insert(ctx, p.conn, p.bind, reader, writer)
 }
 
-// Perform a patch, selecting using the selector, binding parameters from
+// Perform an update, selecting using the selector, binding parameters from
 // the writer, and scanning the result into the reader
-func (p *conn) Patch(ctx context.Context, reader Reader, sel Selector, writer Writer) error {
-	return patch(ctx, p.conn, p.bind, reader, sel, writer)
+func (p *conn) Update(ctx context.Context, reader Reader, sel Selector, writer Writer) error {
+	return update(ctx, p.conn, p.bind, reader, sel, writer)
 }
 
 // Perform a delete, binding parameters with the selector and scanning the
@@ -162,7 +172,7 @@ func (p *conn) List(ctx context.Context, reader Reader, sel Selector) error {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func tx(ctx context.Context, tx pgx.Tx, bind *Bind, fn func(conn Conn) error) error {
+func tx(ctx context.Context, tx pgx.Tx, bind *Bind, fn func(Conn) error) error {
 	tx, err := tx.Begin(ctx)
 	if err != nil {
 		return err
@@ -184,10 +194,10 @@ func insert(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, writer 
 	}
 }
 
-func patch(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selector, writer Writer) error {
-	if query, err := sel.Select(bind, Patch); err != nil {
+func update(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selector, writer Writer) error {
+	if query, err := sel.Select(bind, Update); err != nil {
 		return err
-	} else if err := writer.Patch(bind); err != nil {
+	} else if err := writer.Update(bind); err != nil {
 		return err
 	} else {
 		return notfound(reader.Scan(bind.QueryRow(ctx, conn, query)))
