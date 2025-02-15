@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	"errors"
+	"log"
 
 	// Packages
 	pg "github.com/djthorpe/go-pg"
@@ -12,8 +13,9 @@ import (
 // GLOBALS
 
 const (
-	pgxContainer = "postgis/postgis:16-master" // Postgresql container
-	pgxPort      = "5432/tcp"
+	pgxContainer = "ghcr.io/mutablelogic/docker-postgres:17-bookworm"
+	//pgxContainer = "postgis/postgis:16-master" // Postgresql container
+	pgxPort = "5432/tcp"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,6 +25,7 @@ const (
 func NewPgxContainer(ctx context.Context, name string, verbose bool) (*Container, pg.PoolConn, error) {
 	// Create a new container with postgresql package
 	container, err := NewContainer(ctx, name, pgxContainer,
+		OptEnv("POSTGRES_REPLICATION_PASSWORD", "password"),
 		OptPostgres("postgres", "password", name), // User, Password, Database
 	)
 	if err != nil {
@@ -36,26 +39,22 @@ func NewPgxContainer(ctx context.Context, name string, verbose bool) (*Container
 	}
 
 	// Create the tracer
-	/*
-		var tracer pg.TraceFn
-		if logger != nil {
-			tracer = func(sql string, args any, err error) {
-				if err != nil {
-					logger.Logf("ERROR: %v", err)
-				}
-				if verbose || err != nil {
-					logger.Logf("SQL: %v, ARGS: %v", sql, args)
-				}
-			}
+	var tracer pg.TraceFn
+	tracer = func(ctx context.Context, sql string, args any, err error) {
+		if err != nil {
+			log.Printf("ERROR: %v", err)
 		}
-	*/
+		if verbose || err != nil {
+			log.Printf("SQL: %v, ARGS: %v", sql, args)
+		}
+	}
 
 	// Create a connection pool
 	pool, err := pg.NewPool(ctx,
 		pg.WithCredentials("postgres", "password"),
 		pg.WithDatabase(name),
 		pg.WithHostPort(host, port),
-		//		pg.WithTrace(tracer),
+		pg.WithTrace(tracer),
 	)
 	if err != nil {
 		return nil, nil, errors.Join(err, container.Close(ctx))

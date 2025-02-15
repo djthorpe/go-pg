@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	// Packages
-	"github.com/djthorpe/go-pg"
+	pg "github.com/djthorpe/go-pg"
 	test "github.com/djthorpe/go-pg/pkg/test"
 	assert "github.com/stretchr/testify/assert"
 )
