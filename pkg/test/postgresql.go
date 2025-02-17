@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"errors"
-	"log"
 
 	// Packages
 	pg "github.com/djthorpe/go-pg"
@@ -22,7 +21,7 @@ const (
 // LIFECYCLE
 
 // Create a new postgresql database and pool, using a unique container name
-func NewPgxContainer(ctx context.Context, name string, verbose bool) (*Container, pg.PoolConn, error) {
+func NewPgxContainer(ctx context.Context, name string, verbose bool, tracer pg.TraceFn) (*Container, pg.PoolConn, error) {
 	// Create a new container with postgresql package
 	container, err := NewContainer(ctx, name, pgxContainer,
 		OptEnv("POSTGRES_REPLICATION_PASSWORD", "password"),
@@ -36,17 +35,6 @@ func NewPgxContainer(ctx context.Context, name string, verbose bool) (*Container
 	port, err := container.GetPort(pgxPort)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	// Create the tracer
-	var tracer pg.TraceFn
-	tracer = func(ctx context.Context, sql string, args any, err error) {
-		if err != nil {
-			log.Printf("ERROR: %v", err)
-		}
-		if verbose || err != nil {
-			log.Printf("SQL: %v, ARGS: %v", sql, args)
-		}
 	}
 
 	// Create a connection pool

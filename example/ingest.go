@@ -84,7 +84,7 @@ func ingest(ctx context.Context, url string, conn pg.Conn) (int, error) {
 		if err := conn.Tx(ctx, func(conn pg.Conn) error {
 			// Do bulk insert
 			return conn.Bulk(ctx, func(conn pg.Conn) error {
-				m, err := ingestFile(zf, conn, year)
+				m, err := ingestFile(ctx, zf, conn, year)
 				if err != nil {
 					return err
 				}
@@ -102,7 +102,7 @@ func ingest(ctx context.Context, url string, conn pg.Conn) (int, error) {
 	return n, nil
 }
 
-func ingestFile(r io.Reader, conn pg.Conn, year uint64) (int, error) {
+func ingestFile(ctx context.Context, r io.Reader, conn pg.Conn, year uint64) (int, error) {
 	n := 0
 	decoder := csv.NewReader(r)
 	for {
@@ -115,7 +115,7 @@ func ingestFile(r io.Reader, conn pg.Conn, year uint64) (int, error) {
 
 		// Insert the record into the database
 		var name Name
-		if err := conn.Insert(context.Background(), &name, NewName(year, record...)); err != nil {
+		if err := conn.Insert(ctx, &name, NewName(year, record...)); err != nil {
 			return n, err
 		} else {
 			n++

@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"log"
 	"os"
 	"path/filepath"
 	"slices"
@@ -44,7 +45,18 @@ func Main(m *testing.M, conn *Conn) {
 
 	// Start the container
 	verbose := slices.Contains(os.Args, "-test.v=true")
-	container, pool, err := NewPgxContainer(ctx, filepath.Base(name), verbose)
+	container, pool, err := NewPgxContainer(ctx, filepath.Base(name), verbose, func(ctx context.Context, sql string, args any, err error) {
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+		}
+		if verbose || err != nil {
+			if args == nil {
+				log.Printf("SQL: %v", sql)
+			} else {
+				log.Printf("SQL: %v, ARGS: %v", sql, args)
+			}
+		}
+	})
 	if err != nil {
 		panic(err)
 	}
