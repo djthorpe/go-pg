@@ -237,8 +237,13 @@ func list(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selec
 		}
 	}
 
-	// Execute the query
-	return exec(ctx, conn, bind, query+` ${offsetlimit}`, reader)
+	// Execute the query. In the case of a list, we return success even if there aren't any
+	// rows returned
+	if err := exec(ctx, conn, bind, query+` ${offsetlimit}`, reader); errors.Is(err, ErrNotFound) {
+		return nil
+	} else {
+		return err
+	}
 }
 
 func count(ctx context.Context, conn pgx.Tx, query string, bind *Bind, reader ListReader) error {
