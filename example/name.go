@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/djthorpe/go-pg"
+	// Packages
+	pg "github.com/djthorpe/go-pg"
 )
 
 type Name struct {

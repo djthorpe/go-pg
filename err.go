@@ -14,6 +14,7 @@ const (
 	ErrSuccess Err = iota
 	ErrNotFound
 	ErrNotImplemented
+	ErrBadParameter
 )
 
 func (e Err) Error() string {
@@ -24,6 +25,8 @@ func (e Err) Error() string {
 		return "not found"
 	case ErrNotImplemented:
 		return "not implemented"
+	case ErrBadParameter:
+		return "bad parameter"
 	default:
 		return fmt.Sprint("Unknown error ", int(e))
 	}

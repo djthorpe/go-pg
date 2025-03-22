@@ -187,46 +187,44 @@ func tx(ctx context.Context, tx pgx.Tx, bind *Bind, fn func(Conn) error) error {
 }
 
 func insert(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, writer Writer) error {
-	if query, err := writer.Insert(bind); err != nil {
+	query, err := writer.Insert(bind)
+	if err != nil {
 		return err
-	} else {
-		return notfound(reader.Scan(bind.QueryRow(ctx, conn, query)))
 	}
+	return exec(ctx, conn, bind, query, reader)
 }
 
 func update(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selector, writer Writer) error {
-	if query, err := sel.Select(bind, Update); err != nil {
+	query, err := sel.Select(bind, Update)
+	if err != nil {
 		return err
-	} else if err := writer.Update(bind); err != nil {
-		return err
-	} else {
-		return notfound(reader.Scan(bind.QueryRow(ctx, conn, query)))
 	}
+	if writer != nil {
+		if err := writer.Update(bind); err != nil {
+			return err
+		}
+	}
+	return exec(ctx, conn, bind, query, reader)
 }
 
 func del(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selector) error {
-	if query, err := sel.Select(bind, Delete); err != nil {
+	query, err := sel.Select(bind, Delete)
+	if err != nil {
 		return err
-	} else {
-		return notfound(reader.Scan(bind.QueryRow(ctx, conn, query)))
 	}
+	return exec(ctx, conn, bind, query, reader)
 }
 
 func get(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selector) error {
-	if query, err := sel.Select(bind, Get); err != nil {
+	query, err := sel.Select(bind, Get)
+	if err != nil {
 		return err
-	} else {
-		return notfound(reader.Scan(bind.QueryRow(ctx, conn, query)))
 	}
+	return exec(ctx, conn, bind, query, reader)
 }
 
 func list(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selector) error {
-	// Set groupby, orderby and offsetlimit
-	bind.Set("groupby", "")
-	bind.Set("orderby", "")
 	bind.Set("offsetlimit", "")
-
-	// Bind
 	query, err := sel.Select(bind, List)
 	if err != nil {
 		return notfound(err)
@@ -239,30 +237,45 @@ func list(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selec
 		}
 	}
 
-	// Execute
-	rows, err := bind.Query(ctx, conn, query+` ${groupby} ${orderby} ${offsetlimit}`)
+	// Execute the query
+	return exec(ctx, conn, bind, query+` ${offsetlimit}`, reader)
+}
+
+func count(ctx context.Context, conn pgx.Tx, query string, bind *Bind, reader ListReader) error {
+	// Make a subquery
+	return reader.ScanCount(bind.QueryRow(ctx, conn, `WITH sq AS (`+query+`) SELECT COUNT(*) AS "count" FROM sq`))
+}
+
+func exec(ctx context.Context, conn pgx.Tx, bind *Bind, query string, reader Reader) error {
+	// Without a reader, just execute the query
+	if reader == nil {
+		return notfound(bind.Exec(ctx, conn, query))
+	}
+	// Execute the query
+	rows, err := bind.Query(ctx, conn, query)
 	if err != nil {
 		return notfound(err)
 	}
 	defer rows.Close()
 
 	// Read rows
+	var scanned bool
 	for rows.Next() {
 		if err := reader.Scan(rows); err != nil {
 			return err
 		}
+		scanned = true
 	}
-	if err := rows.Err(); err != nil {
+
+	// Return errors
+	if !scanned {
+		return notfound(pgx.ErrNoRows)
+	} else if err := rows.Err(); err != nil {
 		return err
 	}
 
 	// Return success
 	return nil
-}
-
-func count(ctx context.Context, conn pgx.Tx, query string, bind *Bind, reader ListReader) error {
-	// Make a subquery
-	return reader.ScanCount(bind.QueryRow(ctx, conn, `WITH sq AS (`+query+` ${groupby}) SELECT COUNT(*) AS "count" FROM sq`))
 }
 
 func notfound(err error) error {

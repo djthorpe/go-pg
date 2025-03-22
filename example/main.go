@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 
+	// Packages
 	"github.com/djthorpe/go-pg/pkg/test"
 )
 
@@ -17,7 +18,7 @@ func main() {
 
 	// Create a postgres database
 	log.Print("Starting postgresql")
-	container, conn, err := test.NewPgxContainer(ctx, "postgres", true)
+	container, conn, err := test.NewPgxContainer(ctx, "postgres", true, nil)
 	if err != nil {
 		panic(err)
 	}
