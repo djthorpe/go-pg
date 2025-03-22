@@ -259,12 +259,18 @@ func exec(ctx context.Context, conn pgx.Tx, bind *Bind, query string, reader Rea
 	defer rows.Close()
 
 	// Read rows
+	var scanned bool
 	for rows.Next() {
 		if err := reader.Scan(rows); err != nil {
 			return err
 		}
+		scanned = true
 	}
-	if err := rows.Err(); err != nil {
+
+	// Return errors
+	if !scanned {
+		return notfound(pgx.ErrNoRows)
+	} else if err := rows.Err(); err != nil {
 		return err
 	}
 
