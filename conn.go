@@ -15,6 +15,9 @@ type Conn interface {
 	// Return a new connection with bound parameters
 	With(...any) Conn
 
+	// Return a connection to a remote database
+	Remote(database string) Conn
+
 	// Perform a transaction within a function
 	Tx(context.Context, func(Conn) error) error
 
@@ -121,6 +124,11 @@ func (o Op) String() string {
 // Return a new connection with new bound parameters
 func (p *conn) With(params ...any) Conn {
 	return &conn{p.conn, p.bind.Copy(params...)}
+}
+
+// Return a connection to a remote database
+func (p *conn) Remote(database string) Conn {
+	return &conn{p.conn, p.bind.withRemote(database)}
 }
 
 // Perform a transaction, then commit or rollback
@@ -248,7 +256,7 @@ func list(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selec
 
 func count(ctx context.Context, conn pgx.Tx, query string, bind *Bind, reader ListReader) error {
 	// Make a subquery
-	return reader.ScanCount(bind.QueryRow(ctx, conn, `WITH sq AS (`+query+`) SELECT COUNT(*) AS "count" FROM sq`))
+	return reader.ScanCount(bind.Copy("as", "t (count BIGINT)").QueryRow(ctx, conn, `WITH sq AS (`+query+`) SELECT COUNT(*) AS "count" FROM sq`))
 }
 
 func exec(ctx context.Context, conn pgx.Tx, bind *Bind, query string, reader Reader) error {

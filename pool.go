@@ -120,6 +120,11 @@ func (p *poolconn) With(params ...any) Conn {
 	return &poolconn{p.conn, p.bind.Copy(params...)}
 }
 
+// Return a new connection to a remote database
+func (p *poolconn) Remote(database string) Conn {
+	return &poolconn{p.conn, p.bind.withRemote(database)}
+}
+
 // Perform a transaction, then commit or rollback
 func (p *poolconn) Tx(ctx context.Context, fn func(conn Conn) error) error {
 	return tx(ctx, p.conn, p.bind, fn)

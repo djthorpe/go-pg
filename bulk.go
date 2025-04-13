@@ -24,6 +24,11 @@ func (conn *bulkconn) With(params ...any) Conn {
 	return &bulkconn{conn.conn, conn.batch, conn.bind.Copy(params...)}
 }
 
+// Return nil for remote bulk connections
+func (conn *bulkconn) Remote(database string) Conn {
+	return nil
+}
+
 // Perform a transaction within a function
 func (conn *bulkconn) Tx(context.Context, func(Conn) error) error {
 	return ErrNotImplemented

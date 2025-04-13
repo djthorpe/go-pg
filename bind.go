@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"strings"
 	"sync"
@@ -21,7 +22,8 @@ import (
 // passed as arguments to the query.
 type Bind struct {
 	sync.RWMutex
-	vars pgx.NamedArgs
+	vars   pgx.NamedArgs
+	dblink string // Used when executing transactions remotely
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,9 +57,8 @@ func (bind *Bind) Copy(pairs ...any) *Bind {
 	}
 
 	varsCopy := make(pgx.NamedArgs, len(bind.vars)+len(pairs)>>1)
-	for key, value := range bind.vars {
-		varsCopy[key] = value
-	}
+	maps.Copy(varsCopy, bind.vars)
+
 	for i := 0; i < len(pairs); i += 2 {
 		if key, ok := pairs[i].(string); !ok || key == "" {
 			return nil
@@ -67,7 +68,16 @@ func (bind *Bind) Copy(pairs ...any) *Bind {
 	}
 
 	// Return the copied Bind object
-	return &Bind{vars: varsCopy}
+	return &Bind{vars: varsCopy, dblink: bind.dblink}
+}
+
+// Return a new bind object with the given database link
+func (bind *Bind) withRemote(database string) *Bind {
+	varsCopy := make(pgx.NamedArgs, len(bind.vars))
+	maps.Copy(varsCopy, bind.vars)
+
+	// Return the copied Bind object
+	return &Bind{vars: varsCopy, dblink: "dbname=" + types.Quote(database)}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,6 +184,23 @@ func (bind *Bind) Append(key string, value any) bool {
 func (bind *Bind) QueryRow(ctx context.Context, conn pgx.Tx, query string) pgx.Row {
 	bind.RLock()
 	defer bind.RUnlock()
+
+	// dblink version
+	if bind.dblink != "" {
+		// 'as' is used to define the column names
+		var def string
+		if bind.Has("as") {
+			def = ` AS ` + bind.Get("as").(string)
+		}
+		// TODO: Attempt to unroll the @parameters in the query
+		return conn.QueryRow(ctx, replace(dblinkSelect, pgx.NamedArgs{
+			"conn":  bind.dblink,
+			"query": bind.Replace(query),
+			"as":    def,
+		}))
+	}
+
+	// normal version
 	return conn.QueryRow(ctx, bind.Replace(query), bind.vars)
 }
 
@@ -181,6 +208,22 @@ func (bind *Bind) QueryRow(ctx context.Context, conn pgx.Tx, query string) pgx.R
 func (bind *Bind) Query(ctx context.Context, conn pgx.Tx, query string) (pgx.Rows, error) {
 	bind.RLock()
 	defer bind.RUnlock()
+
+	// dblink version
+	if bind.dblink != "" {
+		// 'as' is used to define the column names
+		var def string
+		if bind.Has("as") {
+			def = ` AS ` + bind.Get("as").(string)
+		}
+		return conn.Query(ctx, replace(dblinkSelect, pgx.NamedArgs{
+			"conn":  bind.dblink,
+			"query": bind.Replace(query),
+			"as":    def,
+		}))
+	}
+
+	// normal version
 	return conn.Query(ctx, bind.Replace(query), bind.vars)
 }
 
@@ -188,11 +231,23 @@ func (bind *Bind) Query(ctx context.Context, conn pgx.Tx, query string) (pgx.Row
 func (bind *Bind) Exec(ctx context.Context, conn pgx.Tx, query string) error {
 	bind.RLock()
 	defer bind.RUnlock()
+
+	// dblink version
+	if bind.dblink != "" {
+		// TODO: Attempt to unroll the parameters
+		_, err := conn.Exec(ctx, replace(dblinkExec, pgx.NamedArgs{
+			"conn":  bind.dblink,
+			"query": bind.Replace(query),
+		}))
+		return err
+	}
+
+	// normal version
 	_, err := conn.Exec(ctx, bind.Replace(query), bind.vars)
 	return err
 }
 
-// Queue a query
+// Queue a query - for bulk operations
 func (bind *Bind) queuerow(batch *pgx.Batch, query string, reader Reader) {
 	bind.RLock()
 	defer bind.RUnlock()
@@ -212,8 +267,12 @@ func (bind *Bind) queuerow(batch *pgx.Batch, query string, reader Reader) {
 //   - $1 => $1
 //   - $$ => $$
 func (bind *Bind) Replace(query string) string {
+	return replace(query, bind.vars)
+}
+
+func replace(query string, vars pgx.NamedArgs) string {
 	fetch := func(key string) string {
-		return fmt.Sprint(bind.vars[key])
+		return fmt.Sprint(vars[key])
 	}
 	return os.Expand(query, func(key string) string {
 		if key == "$" { // $$ => $$
@@ -225,7 +284,7 @@ func (bind *Bind) Replace(query string) string {
 		if types.IsSingleQuoted(key) { // ${'key'} => 'value'
 			// Special case where value is []string and single quote for IN (${key})
 			key := strings.Trim(key, "'")
-			value := bind.vars[key]
+			value := vars[key]
 			switch v := value.(type) {
 			case []string:
 				result := make([]string, len(v))
@@ -243,3 +302,11 @@ func (bind *Bind) Replace(query string) string {
 		return fetch(key) // ${key} => value
 	})
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// SQL
+
+const (
+	dblinkSelect = "SELECT * FROM dblink(${'conn'}, ${'query'}, true)${as}"
+	dblinkExec   = "SELECT dblink_exec(${'conn'}, ${'query'}, true)"
+)

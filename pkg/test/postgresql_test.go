@@ -16,7 +16,7 @@ func Test_Postgresql_001(t *testing.T) {
 	assert := assert.New(t)
 
 	// Create a new container with postgresql package
-	container, pool, err := test.NewPgxContainer(context.Background(), t.Name(), true)
+	container, pool, err := test.NewPgxContainer(context.Background(), t.Name(), true, nil)
 	assert.NoError(err)
 	assert.NotNil(container)
 	assert.NotNil(pool)
