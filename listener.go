@@ -34,6 +34,8 @@ type listener struct {
 	conn *pgxpool.Conn
 }
 
+var _ Listener = (*listener)(nil)
+
 type Notification struct {
 	Channel string
 	Payload []byte
@@ -44,15 +46,9 @@ type Notification struct {
 
 // NewListener return a Listener for the given pool. If pool is nil then
 // return nil
-func NewListener(conn PoolConn) *listener {
+func (pg *poolconn) Listener() Listener {
 	l := new(listener)
-	if conn == nil {
-		return nil
-	} else if poolconn, ok := conn.(*poolconn); !ok {
-		return nil
-	} else {
-		l.pool = poolconn.conn.Pool
-	}
+	l.pool = pg.conn.Pool
 	return l
 }
 
@@ -109,7 +105,7 @@ func (l *listener) Unlisten(ctx context.Context, topic string) error {
 
 	// Check if the connection is nil
 	if l.conn == nil {
-		return fmt.Errorf("Connection is nil")
+		return fmt.Errorf("connection is nil")
 	}
 
 	// Unlisten from a topic
@@ -123,6 +119,9 @@ func (l *listener) WaitForNotification(ctx context.Context) (*Notification, erro
 	defer l.Unlock()
 
 	// Wait for a notification
+	if l.conn == nil || l.conn.Conn() == nil {
+		return nil, fmt.Errorf("connection is nil")
+	}
 	n, err := l.conn.Conn().WaitForNotification(ctx)
 	if err != nil {
 		return nil, err

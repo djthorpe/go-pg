@@ -25,6 +25,9 @@ type PoolConn interface {
 
 	// Reset the connection pool
 	Reset()
+
+	// Return a listener for the connection pool
+	Listener() Listener
 }
 
 type pool struct {
