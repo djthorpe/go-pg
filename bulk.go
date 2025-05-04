@@ -84,7 +84,7 @@ func bulk(ctx context.Context, tx pgx.Tx, bind *Bind, fn func(Conn) error) error
 	tx_.conn = tx
 	tx_.bind = bind
 	if err := fn(tx_); err != nil {
-		return notfound(err)
+		return pgerror(err)
 	}
 
 	// Send the batch

@@ -1,6 +1,12 @@
 package pg
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+
+	// Packages
+	pgx "github.com/jackc/pgx/v5"
+)
 
 /////////////////////////////////////////////////////////////////////
 // TYPES
@@ -29,5 +35,16 @@ func (e Err) Error() string {
 		return "bad parameter"
 	default:
 		return fmt.Sprint("Unknown error ", int(e))
+	}
+}
+
+/////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS
+
+func pgerror(err error) error {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	} else {
+		return err
 	}
 }

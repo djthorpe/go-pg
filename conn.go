@@ -188,9 +188,9 @@ func tx(ctx context.Context, tx pgx.Tx, bind *Bind, fn func(Conn) error) error {
 
 	tx_ := &conn{tx, bind.Copy()}
 	if err := fn(tx_); err != nil {
-		return errors.Join(notfound(err), tx.Rollback(ctx))
+		return errors.Join(pgerror(err), tx.Rollback(ctx))
 	} else {
-		return errors.Join(notfound(err), tx.Commit(ctx))
+		return errors.Join(pgerror(err), tx.Commit(ctx))
 	}
 }
 
@@ -235,13 +235,13 @@ func list(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selec
 	bind.Set("offsetlimit", "")
 	query, err := sel.Select(bind, List)
 	if err != nil {
-		return notfound(err)
+		return pgerror(err)
 	}
 
 	// Count the number of rows if the reader is a ListReader
 	if counter, ok := reader.(ListReader); ok {
 		if err := count(ctx, conn, query, bind, counter); err != nil {
-			return notfound(err)
+			return pgerror(err)
 		}
 	}
 
@@ -250,24 +250,24 @@ func list(ctx context.Context, conn pgx.Tx, bind *Bind, reader Reader, sel Selec
 	if err := exec(ctx, conn, bind, query+` ${offsetlimit}`, reader); errors.Is(err, ErrNotFound) {
 		return nil
 	} else {
-		return err
+		return pgerror(err)
 	}
 }
 
 func count(ctx context.Context, conn pgx.Tx, query string, bind *Bind, reader ListReader) error {
 	// Make a subquery
-	return reader.ScanCount(bind.Copy("as", "t (count BIGINT)").QueryRow(ctx, conn, `WITH sq AS (`+query+`) SELECT COUNT(*) AS "count" FROM sq`))
+	return pgerror(reader.ScanCount(bind.Copy("as", "t (count BIGINT)").QueryRow(ctx, conn, `WITH sq AS (`+query+`) SELECT COUNT(*) AS "count" FROM sq`)))
 }
 
 func exec(ctx context.Context, conn pgx.Tx, bind *Bind, query string, reader Reader) error {
 	// Without a reader, just execute the query
 	if reader == nil {
-		return notfound(bind.Exec(ctx, conn, query))
+		return pgerror(bind.Exec(ctx, conn, query))
 	}
 	// Execute the query
 	rows, err := bind.Query(ctx, conn, query)
 	if err != nil {
-		return notfound(err)
+		return pgerror(err)
 	}
 	defer rows.Close()
 
@@ -275,26 +275,17 @@ func exec(ctx context.Context, conn pgx.Tx, bind *Bind, query string, reader Rea
 	var scanned bool
 	for rows.Next() {
 		if err := reader.Scan(rows); err != nil {
-			return err
+			return pgerror(err)
 		}
 		scanned = true
 	}
 
-	// Return errors
-	if !scanned {
-		return notfound(pgx.ErrNoRows)
-	} else if err := rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return err
+	} else if !scanned {
+		return pgerror(pgx.ErrNoRows)
 	}
 
 	// Return success
 	return nil
-}
-
-func notfound(err error) error {
-	if errors.Is(err, pgx.ErrNoRows) {
-		return ErrNotFound
-	} else {
-		return err
-	}
 }
