@@ -34,6 +34,9 @@ type Globals struct {
 type CLI struct {
 	Globals
 	DatabaseCommands
+	RoleCommands
+	SchemaCommands
+	ObjectCommands
 	ServerCommands
 }
 

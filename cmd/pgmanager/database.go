@@ -15,6 +15,7 @@ type DatabaseCommands struct {
 	GetDatabase    GetDatabaseCommand    `cmd:"" name:"database" help:"Get database."`
 	CreateDatabase CreateDatabaseCommand `cmd:"" name:"create-database" help:"Create database."`
 	DeleteDatabase DeleteDatabaseCommand `cmd:"" name:"delete-database" help:"Delete database."`
+	UpdateDatabase UpdateDatabaseCommand `cmd:"" name:"update-database" help:"Update database."`
 }
 
 type ListDatabaseCommand struct{}
@@ -29,7 +30,15 @@ type DeleteDatabaseCommand struct {
 
 type CreateDatabaseCommand struct {
 	GetDatabaseCommand
-	Owner string `name:"owner" help:"Database owner"`
+	Owner string   `name:"owner" help:"Database owner"`
+	Acl   []string `name:"acl" help:"Access control list entries (format: role:priv,priv,... e.g. myuser:SELECT,INSERT)"`
+}
+
+type UpdateDatabaseCommand struct {
+	GetDatabaseCommand
+	NewName string   `name:"rename" help:"Rename database to this name"`
+	Owner   string   `name:"owner" help:"Database owner"`
+	Acl     []string `name:"acl" help:"Access control list entries (format: role:priv,priv,... e.g. myuser:SELECT,INSERT)"`
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,10 +84,21 @@ func (cmd *CreateDatabaseCommand) Run(ctx *Globals) error {
 		return err
 	}
 
-	// Get one database
+	// Parse ACL entries
+	var acl schema.ACLList
+	for _, aclStr := range cmd.Acl {
+		item, err := schema.ParseACLItem(aclStr)
+		if err != nil {
+			return fmt.Errorf("invalid ACL %q: %w", aclStr, err)
+		}
+		acl = append(acl, item)
+	}
+
+	// Create database
 	database, err := client.CreateDatabase(ctx.ctx, schema.DatabaseMeta{
 		Name:  cmd.Name,
 		Owner: cmd.Owner,
+		Acl:   acl,
 	})
 	if err != nil {
 		return err
@@ -95,11 +115,47 @@ func (cmd *DeleteDatabaseCommand) Run(ctx *Globals) error {
 		return err
 	}
 
-	// Get one database
+	// Delete database
 	if err := client.DeleteDatabase(ctx.ctx, cmd.Name); err != nil {
 		return err
 	}
 
 	// Return success
+	return nil
+}
+
+func (cmd *UpdateDatabaseCommand) Run(ctx *Globals) error {
+	client, err := ctx.Client()
+	if err != nil {
+		return err
+	}
+
+	// Parse ACL entries
+	var acl schema.ACLList
+	for _, aclStr := range cmd.Acl {
+		item, err := schema.ParseACLItem(aclStr)
+		if err != nil {
+			return fmt.Errorf("invalid ACL %q: %w", aclStr, err)
+		}
+		acl = append(acl, item)
+	}
+
+	// Build meta
+	meta := schema.DatabaseMeta{
+		Owner: cmd.Owner,
+		Acl:   acl,
+	}
+	if cmd.NewName != "" {
+		meta.Name = cmd.NewName
+	}
+
+	// Update database
+	database, err := client.UpdateDatabase(ctx.ctx, cmd.Name, meta)
+	if err != nil {
+		return err
+	}
+
+	// Print
+	fmt.Println(database)
 	return nil
 }

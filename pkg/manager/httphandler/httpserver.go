@@ -16,6 +16,9 @@ import (
 
 func RegisterHandlers(router *http.ServeMux, prefix string, manager *manager.Manager) {
 	RegisterDatabaseHandlers(router, prefix, manager)
+	RegisterRoleHandlers(router, prefix, manager)
+	RegisterSchemaHandlers(router, prefix, manager)
+	RegisterObjectHandlers(router, prefix, manager)
 }
 
 ///////////////////////////////////////////////////////////////////////////////

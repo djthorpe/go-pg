@@ -1,6 +1,11 @@
 package schema
 
-// Packages
+import (
+	"context"
+
+	// Packages
+	pg "github.com/djthorpe/go-pg"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBALS
@@ -26,4 +31,17 @@ const (
 	pgObfuscatedPassword = "********"
 	defaultSchema        = "public"
 	reservedPrefix       = "pg_"
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// BOOTSTRAP
+
+// Bootstrap creates the dblink extension required for remote database queries.
+// This should be called once when initializing the manager.
+func Bootstrap(ctx context.Context, conn pg.PoolConn) error {
+	return conn.Exec(ctx, dblinkCreateExtension)
+}
+
+const (
+	dblinkCreateExtension = `CREATE EXTENSION IF NOT EXISTS dblink WITH SCHEMA ` + defaultSchema
 )
