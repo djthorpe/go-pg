@@ -38,6 +38,14 @@ func (e Err) Error() string {
 	}
 }
 
+func (e Err) With(a ...any) error {
+	return fmt.Errorf("%w: %s", e, fmt.Sprint(a...))
+}
+
+func (e Err) Withf(format string, a ...any) error {
+	return fmt.Errorf("%w: %s", e, fmt.Sprintf(format, a...))
+}
+
 /////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 

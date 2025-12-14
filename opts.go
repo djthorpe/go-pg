@@ -27,7 +27,13 @@ type Opt func(*opt) error
 
 const (
 	DefaultPort     = "5432"
+	defaultHost     = "localhost"
+	defaultDatabase = "postgres"
 	defaultMaxConns = "10"
+)
+
+var (
+	defaultScheme = []string{"postgres", "postgresql"}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,6 +63,32 @@ func apply(opts ...Opt) (*opt, error) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
+
+// Set connection pool by URL
+func WithURL(value string) Opt {
+	return func(o *opt) error {
+		url, err := parseUrl(value)
+		if err != nil {
+			return err
+		}
+		o.Values.Set("host", url.Hostname())
+		o.Values.Set("port", url.Port())
+		o.Values.Set("dbname", strings.TrimPrefix(url.Path, "/"))
+		if user := url.User.Username(); user != "" {
+			o.Values.Set("user", user)
+		}
+		if password, ok := url.User.Password(); ok {
+			o.Values.Set("password", password)
+		}
+		q := url.Query()
+		for key, values := range q {
+			for _, v := range values {
+				o.Values.Add(key, v)
+			}
+		}
+		return nil
+	}
+}
 
 // Set connection pool username and password. If the database name is not set,
 // then the username will be used as the default database name.
@@ -179,4 +211,50 @@ func (o *opt) encode(skip ...string) []string {
 // Encode the options as a connection string
 func (o *opt) Encode() string {
 	return strings.Join(o.encode(), " ")
+}
+
+// Parse the URL
+func parseUrl(value string) (*url.URL, error) {
+	url, err := url.Parse(value)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check scheme
+	if url.Scheme == "" {
+		url.Scheme = defaultScheme[0]
+	} else if !slices.Contains(defaultScheme, url.Scheme) {
+		return nil, ErrBadParameter.With("invalid database scheme")
+	}
+
+	// Normalize host:port
+	if url.Port() == "" {
+		url.Host = net.JoinHostPort(url.Host, DefaultPort)
+	}
+	host, port, err := net.SplitHostPort(url.Host)
+	if err != nil {
+		return nil, ErrBadParameter.With("invalid database host format")
+	}
+	if port == "" {
+		port = DefaultPort
+	}
+	if host == "" {
+		host = defaultHost
+	}
+	url.Host = fmt.Sprintf("%s:%s", host, port)
+
+	// Get user credentials - and set database name if missing
+	if url.User != nil {
+		if user := url.User.Username(); user != "" && url.Path == "" {
+			url.Path = "/" + user
+		}
+	}
+
+	// Normalize path
+	if url.Path == "" || url.Path == "/" {
+		url.Path = "/" + defaultDatabase
+	}
+
+	// For now, just return the string
+	return url, nil
 }

@@ -1,0 +1,29 @@
+package schema
+
+// Packages
+
+////////////////////////////////////////////////////////////////////////////////
+// GLOBALS
+
+const (
+	CatalogSchema  = "pg_catalog"
+	APIPrefix      = "/pg/v1"
+	DefaultAclRole = "PUBLIC"
+)
+
+const (
+	// Maximum number of items to return in a list query, for each type
+	RoleListLimit       = 100
+	DatabaseListLimit   = 100
+	SchemaListLimit     = 100
+	ObjectListLimit     = 100
+	ConnectionListLimit = 100
+	TablespaceListLimit = 100
+)
+
+const (
+	pgTimestampFormat    = "2006-01-02 15:04:05"
+	pgObfuscatedPassword = "********"
+	defaultSchema        = "public"
+	reservedPrefix       = "pg_"
+)
