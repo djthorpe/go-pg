@@ -17,7 +17,7 @@ jobs:
         env:
             OS: linux
             ARCH: ${{ matrix.arch }}
-            DOCKER_REPO: ghcr.io/${{ github.repository }}
+            DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/pgmanager
             DOCKER_SOURCE: https://github.com/${{ github.repository }}
         outputs:
             tag: ${{ steps.build.outputs.tag }}
@@ -65,17 +65,16 @@ jobs:
                   password: ${{ secrets.GITHUB_TOKEN }}
             - name: Create
               run: |
-                  docker manifest create ghcr.io/${{ github.repository }}:${{ matrix.tag }} \
-                    --amend ghcr.io/${{ github.repository }}-linux-amd64:${{ needs.build.outputs.tag }} \
-                    --amend ghcr.io/${{ github.repository }}-linux-arm64:${{ needs.build.outputs.tag }}
+                  docker manifest create ghcr.io/${{ github.repository_owner }}/pgmanager:${{ matrix.tag }} \
+                    --amend ghcr.io/${{ github.repository_owner }}/pgmanager-linux-amd64:${{ needs.build.outputs.tag }} \
+                    --amend ghcr.io/${{ github.repository_owner }}/pgmanager-linux-arm64:${{ needs.build.outputs.tag }}
             - name: Annotate
               run: |
                   docker manifest annotate --arch amd64 --os linux \
-                    ghcr.io/${{ github.repository }}:${{ matrix.tag }} \
-                    ghcr.io/${{ github.repository }}-linux-amd64:${{ needs.build.outputs.tag }}
+                    ghcr.io/${{ github.repository_owner }}/pgmanager:${{ matrix.tag }} \
+                    ghcr.io/${{ github.repository_owner }}/pgmanager-linux-amd64:${{ needs.build.outputs.tag }}
                   docker manifest annotate --arch arm64 --os linux \
-                    ghcr.io/${{ github.repository }}:${{ matrix.tag }} \
-                    ghcr.io/${{ github.repository }}-linux-arm64:${{ needs.build.outputs.tag }}
+                    ghcr.io/${{ github.repository_owner }}/pgmanager:${{ matrix.tag }} \
+                    ghcr.io/${{ github.repository_owner }}/pgmanager-linux-arm64:${{ needs.build.outputs.tag }}
             - name: Push
-              run: |
-                  docker manifest push ghcr.io/${{ github.repository }}:${{ matrix.tag }}
+              run: docker manifest push ghcr.io/${{ github.repository_owner }}/pgmanager:${{ matrix.tag }}
