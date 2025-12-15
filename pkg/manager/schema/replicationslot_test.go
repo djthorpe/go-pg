@@ -15,7 +15,7 @@ func Test_ReplicationSlot_String(t *testing.T) {
 
 	t.Run("ValidSlot", func(t *testing.T) {
 		lagBytes := int64(1024)
-		lagSeconds := 0.5
+		lagMs := 0.5
 		s := schema.ReplicationSlot{
 			ReplicationSlotMeta: schema.ReplicationSlotMeta{
 				Name:     "my_slot",
@@ -25,7 +25,7 @@ func Test_ReplicationSlot_String(t *testing.T) {
 			Status:     "streaming",
 			ClientAddr: "192.168.1.100",
 			LagBytes:   &lagBytes,
-			LagSeconds: &lagSeconds,
+			LagMs:      &lagMs,
 		}
 		str := s.String()
 		assert.NotEmpty(str)
@@ -230,7 +230,7 @@ func Test_ReplicationSlotListRequest_Select(t *testing.T) {
 		sql, err := req.Select(bind, pg.List)
 		assert.NoError(err)
 		assert.NotEmpty(sql)
-		assert.Equal("ORDER BY slot_name ASC", bind.Get("orderby"))
+		assert.Equal("ORDER BY name ASC", bind.Get("orderby"))
 		assert.Equal("", bind.Get("where"))
 	})
 

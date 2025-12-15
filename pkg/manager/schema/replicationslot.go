@@ -223,7 +223,8 @@ const (
 			COALESCE(s.two_phase, false) AS two_phase,
 			CASE
 				WHEN s.wal_status = 'lost' THEN 'lost'
-				WHEN s.active THEN 'active'
+				WHEN s.active AND r.replay_lag IS NOT NULL AND r.replay_lag > interval '0' THEN 'catchup'
+				WHEN s.active THEN 'streaming'
 				ELSE 'inactive'
 			END AS status,
 			COALESCE(host(r.client_addr), '') AS client_addr,
