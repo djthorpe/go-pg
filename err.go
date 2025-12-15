@@ -21,6 +21,7 @@ const (
 	ErrNotFound
 	ErrNotImplemented
 	ErrBadParameter
+	ErrNotAvailable
 )
 
 func (e Err) Error() string {
@@ -33,9 +34,19 @@ func (e Err) Error() string {
 		return "not implemented"
 	case ErrBadParameter:
 		return "bad parameter"
+	case ErrNotAvailable:
+		return "not available"
 	default:
 		return fmt.Sprint("Unknown error ", int(e))
 	}
+}
+
+func (e Err) With(a ...any) error {
+	return fmt.Errorf("%w: %s", e, fmt.Sprint(a...))
+}
+
+func (e Err) Withf(format string, a ...any) error {
+	return fmt.Errorf("%w: %s", e, fmt.Sprintf(format, a...))
 }
 
 /////////////////////////////////////////////////////////////////////
