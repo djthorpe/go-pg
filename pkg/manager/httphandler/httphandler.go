@@ -21,6 +21,7 @@ func RegisterHandlers(router *http.ServeMux, prefix string, manager *manager.Man
 	RegisterObjectHandlers(router, prefix, manager)
 	RegisterRoleHandlers(router, prefix, manager)
 	RegisterSchemaHandlers(router, prefix, manager)
+	RegisterSettingHandlers(router, prefix, manager)
 	RegisterTablespaceHandlers(router, prefix, manager)
 }
 

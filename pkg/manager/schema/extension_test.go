@@ -203,7 +203,7 @@ func Test_ExtensionName_Select(t *testing.T) {
 		assert.NoError(err)
 		assert.NotEmpty(sql)
 		assert.Contains(sql, "DROP")
-		assert.Equal("\"postgis\"", bind.Get("name"))
+		assert.Equal("postgis", bind.Get("name")) // Raw name - template handles quoting
 		assert.Equal("", bind.Get("cascade"))
 	})
 
@@ -251,7 +251,7 @@ func Test_ExtensionMeta_Insert(t *testing.T) {
 		assert.NoError(err)
 		assert.NotEmpty(sql)
 		assert.Contains(sql, "CREATE EXTENSION")
-		assert.Equal("\"postgis\"", bind.Get("name"))
+		assert.Equal("postgis", bind.Get("name")) // Raw name - template handles quoting
 		assert.Equal("", bind.Get("with"))
 		assert.Equal("", bind.Get("version"))
 	})
@@ -328,19 +328,16 @@ func Test_ExtensionMeta_Update(t *testing.T) {
 	t.Run("ValidUpdate", func(t *testing.T) {
 		bind := pg.NewBind()
 		meta := schema.ExtensionMeta{Name: "postgis"}
-		sql, err := meta.Update(bind)
+		err := meta.Update(bind)
 		assert.NoError(err)
-		assert.NotEmpty(sql)
-		assert.Contains(sql, "ALTER EXTENSION")
-		assert.Contains(sql, "UPDATE")
-		assert.Equal("\"postgis\"", bind.Get("name"))
+		assert.Equal("postgis", bind.Get("name")) // Raw name - template handles quoting
 		assert.Equal("", bind.Get("version"))
 	})
 
 	t.Run("UpdateWithVersion", func(t *testing.T) {
 		bind := pg.NewBind()
 		meta := schema.ExtensionMeta{Name: "postgis", Version: "3.4.0"}
-		_, err := meta.Update(bind)
+		err := meta.Update(bind)
 		assert.NoError(err)
 		version := bind.Get("version").(string)
 		assert.Contains(version, "TO")
@@ -350,7 +347,7 @@ func Test_ExtensionMeta_Update(t *testing.T) {
 	t.Run("EmptyName", func(t *testing.T) {
 		bind := pg.NewBind()
 		meta := schema.ExtensionMeta{Name: ""}
-		_, err := meta.Update(bind)
+		err := meta.Update(bind)
 		assert.Error(err)
 		assert.ErrorIs(err, pg.ErrBadParameter)
 	})
@@ -358,7 +355,7 @@ func Test_ExtensionMeta_Update(t *testing.T) {
 	t.Run("WhitespaceOnlyName", func(t *testing.T) {
 		bind := pg.NewBind()
 		meta := schema.ExtensionMeta{Name: "   "}
-		_, err := meta.Update(bind)
+		err := meta.Update(bind)
 		assert.Error(err)
 		assert.ErrorIs(err, pg.ErrBadParameter)
 	})
@@ -373,9 +370,9 @@ func Test_ExtensionName_SpecialCharacters(t *testing.T) {
 		sql, err := ext.Select(bind, pg.Delete)
 		assert.NoError(err)
 		assert.NotEmpty(sql)
-		// Should properly escape the quote
+		// Raw name stored - template handles escaping
 		name := bind.Get("name").(string)
-		assert.Contains(name, "\"\"")
+		assert.Equal("my\"ext", name)
 	})
 
 	t.Run("NameWithSpaces", func(t *testing.T) {
@@ -384,7 +381,8 @@ func Test_ExtensionName_SpecialCharacters(t *testing.T) {
 		sql, err := ext.Select(bind, pg.Delete)
 		assert.NoError(err)
 		assert.NotEmpty(sql)
+		// Raw name stored - template handles quoting
 		name := bind.Get("name").(string)
-		assert.Equal("\"my extension\"", name)
+		assert.Equal("my extension", name)
 	})
 }

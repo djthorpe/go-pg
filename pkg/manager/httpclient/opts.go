@@ -72,6 +72,17 @@ func WithSchema(v *string) Opt {
 	return OptSet("schema", types.PtrString(v))
 }
 
+func WithCategory(v *string) Opt {
+	return OptSet("category", types.PtrString(v))
+}
+
+func WithReload(v bool) Opt {
+	if v {
+		return OptSet("reload", "true")
+	}
+	return OptSet("reload", "")
+}
+
 func WithType(v *string) Opt {
 	return OptSet("type", types.PtrString(v))
 }

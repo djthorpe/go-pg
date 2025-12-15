@@ -40,6 +40,7 @@ type CLI struct {
 	SchemaCommands
 	ObjectCommands
 	ServerCommands
+	SettingCommands
 	TablespaceCommands
 }
 

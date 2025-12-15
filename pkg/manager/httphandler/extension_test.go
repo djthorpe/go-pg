@@ -155,14 +155,19 @@ func Test_Extension_Get(t *testing.T) {
 	router := http.NewServeMux()
 	httphandler.RegisterExtensionHandlers(router, "/api", manager.Manager)
 
-	t.Run("GetNotImplemented", func(t *testing.T) {
+	t.Run("GetExisting", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/extension/plpgsql", nil)
 		w := httptest.NewRecorder()
 
 		router.ServeHTTP(w, req)
 
-		// Get is not implemented yet
-		assert.Equal(http.StatusNotImplemented, w.Code)
+		assert.Equal(http.StatusOK, w.Code)
+
+		// Parse response
+		var ext schema.Extension
+		err := json.Unmarshal(w.Body.Bytes(), &ext)
+		assert.NoError(err)
+		assert.Equal("plpgsql", ext.Name)
 	})
 
 	t.Run("MethodNotAllowed", func(t *testing.T) {
@@ -187,7 +192,7 @@ func Test_Extension_Create(t *testing.T) {
 	router := http.NewServeMux()
 	httphandler.RegisterExtensionHandlers(router, "/api", manager.Manager)
 
-	t.Run("CreateNotImplemented", func(t *testing.T) {
+	t.Run("CreateMissingDatabase", func(t *testing.T) {
 		body := `{"name": "hstore"}`
 		req := httptest.NewRequest(http.MethodPost, "/api/extension", bytes.NewBufferString(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -195,23 +200,23 @@ func Test_Extension_Create(t *testing.T) {
 
 		router.ServeHTTP(w, req)
 
-		// Create is not implemented yet
-		assert.Equal(http.StatusNotImplemented, w.Code)
+		// Create requires database field
+		assert.Equal(http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("CreateEmptyName", func(t *testing.T) {
-		body := `{"name": ""}`
+		body := `{"name": "", "database": "postgres"}`
 		req := httptest.NewRequest(http.MethodPost, "/api/extension", bytes.NewBufferString(body))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		router.ServeHTTP(w, req)
 
-		// Returns not implemented before validation
-		assert.Equal(http.StatusNotImplemented, w.Code)
+		// Returns bad request for empty name
+		assert.Equal(http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("CreateWithSchema", func(t *testing.T) {
+	t.Run("CreateWithSchemaMissingDatabase", func(t *testing.T) {
 		body := `{"name": "hstore", "schema": "public"}`
 		req := httptest.NewRequest(http.MethodPost, "/api/extension", bytes.NewBufferString(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -219,11 +224,11 @@ func Test_Extension_Create(t *testing.T) {
 
 		router.ServeHTTP(w, req)
 
-		// Create is not implemented yet
-		assert.Equal(http.StatusNotImplemented, w.Code)
+		// Create requires database field
+		assert.Equal(http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("CreateWithVersion", func(t *testing.T) {
+	t.Run("CreateWithVersionMissingDatabase", func(t *testing.T) {
 		body := `{"name": "hstore", "version": "1.8"}`
 		req := httptest.NewRequest(http.MethodPost, "/api/extension", bytes.NewBufferString(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -231,8 +236,8 @@ func Test_Extension_Create(t *testing.T) {
 
 		router.ServeHTTP(w, req)
 
-		// Create is not implemented yet
-		assert.Equal(http.StatusNotImplemented, w.Code)
+		// Create requires database field
+		assert.Equal(http.StatusBadRequest, w.Code)
 	})
 }
 
@@ -248,7 +253,7 @@ func Test_Extension_Update(t *testing.T) {
 	router := http.NewServeMux()
 	httphandler.RegisterExtensionHandlers(router, "/api", manager.Manager)
 
-	t.Run("UpdateNotImplemented", func(t *testing.T) {
+	t.Run("UpdateMissingDatabase", func(t *testing.T) {
 		body := `{"version": "1.0"}`
 		req := httptest.NewRequest(http.MethodPatch, "/api/extension/plpgsql", bytes.NewBufferString(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -256,8 +261,8 @@ func Test_Extension_Update(t *testing.T) {
 
 		router.ServeHTTP(w, req)
 
-		// Update is not implemented yet
-		assert.Equal(http.StatusNotImplemented, w.Code)
+		// Update requires database field
+		assert.Equal(http.StatusBadRequest, w.Code)
 	})
 }
 
@@ -273,23 +278,23 @@ func Test_Extension_Delete(t *testing.T) {
 	router := http.NewServeMux()
 	httphandler.RegisterExtensionHandlers(router, "/api", manager.Manager)
 
-	t.Run("DeleteNotImplemented", func(t *testing.T) {
+	t.Run("DeleteMissingDatabase", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodDelete, "/api/extension/hstore", nil)
 		w := httptest.NewRecorder()
 
 		router.ServeHTTP(w, req)
 
-		// Delete is not implemented yet
-		assert.Equal(http.StatusNotImplemented, w.Code)
+		// Delete requires database query parameter
+		assert.Equal(http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("DeleteWithForce", func(t *testing.T) {
+	t.Run("DeleteWithForceMissingDatabase", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodDelete, "/api/extension/hstore?force=true", nil)
 		w := httptest.NewRecorder()
 
 		router.ServeHTTP(w, req)
 
-		// Delete is not implemented yet
-		assert.Equal(http.StatusNotImplemented, w.Code)
+		// Delete requires database query parameter
+		assert.Equal(http.StatusBadRequest, w.Code)
 	})
 }
