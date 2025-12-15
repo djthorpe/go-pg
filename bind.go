@@ -157,8 +157,8 @@ func (bind *Bind) Join(key, sep string) string {
 // Append appends a bind var to a list. Returns false if the key
 // is not a list, or the value is not a list.
 func (bind *Bind) Append(key string, value any) bool {
-	bind.RLock()
-	defer bind.RUnlock()
+	bind.Lock()
+	defer bind.Unlock()
 
 	// Create a new list if it doesn't exist
 	if _, ok := bind.vars[key]; !ok {
