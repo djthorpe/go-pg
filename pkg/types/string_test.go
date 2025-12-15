@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	// Packages
-	types "github.com/djthorpe/go-pg/pkg/types"
+	types "github.com/mutablelogic/go-pg/pkg/types"
 	assert "github.com/stretchr/testify/assert"
 )
 

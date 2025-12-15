@@ -6,14 +6,14 @@ There are unit and integration tests included.
 To test the package:
 
 ```bash
-git clone github.com/djthorpe/go-pg
+git clone github.com/mutablelogic/go-pg
 make tests
 ```
 
 You'll need to have docker installed in order to run the integration tests, which will create a PostgreSQL server in a container. There is a command line client included for testing:
 
 ```bash
-git clone github.com/djthorpe/go-pg
+git clone github.com/mutablelogic/go-pg
 make cmd/pgmanager
 ```
 
@@ -41,13 +41,13 @@ The package is organized into four main components:
 The core component that provides direct access to PostgreSQL management functions. It wraps a connection pool and exposes methods for querying and managing server resources.
 
 ```go
-import "github.com/djthorpe/go-pg/pkg/manager"
+import "github.com/mutablelogic/go-pg/pkg/manager"
 
 // Create a manager from an existing connection pool
 mgr, err := manager.New(ctx, conn)
 ```
 
-Documentation for all manager methods can be found [here](https://pkg.go.dev/github.com/djthorpe/go-pg/pkg/manager).
+Documentation for all manager methods can be found [here](https://pkg.go.dev/github.com/mutablelogic/go-pg/pkg/manager).
 
 ### Schema (`schema/`)
 
@@ -62,7 +62,7 @@ Defines all data types, request/response structures, and SQL queries for Postgre
 Provides REST API endpoints for all management operations. Register handlers with an `http.ServeMux`:
 
 ```go
-import "github.com/djthorpe/go-pg/pkg/manager/httphandler"
+import "github.com/mutablelogic/go-pg/pkg/manager/httphandler"
 
 httphandler.RegisterHandlers(mux, "/api/v1", mgr)
 ```
@@ -80,7 +80,7 @@ Includes a Prometheus metrics endpoint at `/api/v1/metrics` exposing:
 A typed client for consuming the REST API from Go applications:
 
 ```go
-import "github.com/djthorpe/go-pg/pkg/manager/httpclient"
+import "github.com/mutablelogic/go-pg/pkg/manager/httpclient"
 
 client, err := httpclient.New("http://localhost:8080/api/v1")
 roles, err := client.ListRoles(ctx)
@@ -148,6 +148,6 @@ Query parameters support filtering and pagination:
 
 ## Dependencies
 
-- `github.com/djthorpe/go-pg` - PostgreSQL connection pool
+- `github.com/mutablelogic/go-pg` - PostgreSQL connection pool
 - `github.com/mutablelogic/go-server` - HTTP utilities
 - `github.com/prometheus/client_golang` - Prometheus metrics

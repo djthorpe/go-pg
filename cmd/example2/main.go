@@ -7,8 +7,8 @@ import (
 	"os/signal"
 
 	// Packages
-	pg "github.com/djthorpe/go-pg"
-	test "github.com/djthorpe/go-pg/pkg/test"
+	pg "github.com/mutablelogic/go-pg"
+	test "github.com/mutablelogic/go-pg/pkg/test"
 )
 
 func main() {

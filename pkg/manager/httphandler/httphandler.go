@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	// Packages
-	pg "github.com/djthorpe/go-pg"
-	manager "github.com/djthorpe/go-pg/pkg/manager"
+	pg "github.com/mutablelogic/go-pg"
+	manager "github.com/mutablelogic/go-pg/pkg/manager"
 	httpresponse "github.com/mutablelogic/go-server/pkg/httpresponse"
 	types "github.com/mutablelogic/go-server/pkg/types"
 )

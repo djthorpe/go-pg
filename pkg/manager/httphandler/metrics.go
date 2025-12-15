@@ -7,9 +7,9 @@ import (
 	"time"
 
 	// Packages
-	pg "github.com/djthorpe/go-pg"
-	manager "github.com/djthorpe/go-pg/pkg/manager"
-	schema "github.com/djthorpe/go-pg/pkg/manager/schema"
+	pg "github.com/mutablelogic/go-pg"
+	manager "github.com/mutablelogic/go-pg/pkg/manager"
+	schema "github.com/mutablelogic/go-pg/pkg/manager/schema"
 	httpresponse "github.com/mutablelogic/go-server/pkg/httpresponse"
 	prometheus "github.com/prometheus/client_golang/prometheus"
 	promhttp "github.com/prometheus/client_golang/prometheus/promhttp"

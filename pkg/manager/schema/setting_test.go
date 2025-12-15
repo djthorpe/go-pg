@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	// Packages
-	pg "github.com/djthorpe/go-pg"
-	schema "github.com/djthorpe/go-pg/pkg/manager/schema"
+	pg "github.com/mutablelogic/go-pg"
+	schema "github.com/mutablelogic/go-pg/pkg/manager/schema"
 	assert "github.com/stretchr/testify/assert"
 )
 

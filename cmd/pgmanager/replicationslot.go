@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	// Packages
-	httpclient "github.com/djthorpe/go-pg/pkg/manager/httpclient"
-	schema "github.com/djthorpe/go-pg/pkg/manager/schema"
+	httpclient "github.com/mutablelogic/go-pg/pkg/manager/httpclient"
+	schema "github.com/mutablelogic/go-pg/pkg/manager/schema"
 )
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	// Packages
-	httprequest "github.com/djthorpe/go-pg/pkg/manager/httphandler"
-	schema "github.com/djthorpe/go-pg/pkg/manager/schema"
-	test "github.com/djthorpe/go-pg/pkg/test"
+	httprequest "github.com/mutablelogic/go-pg/pkg/manager/httphandler"
+	schema "github.com/mutablelogic/go-pg/pkg/manager/schema"
+	test "github.com/mutablelogic/go-pg/pkg/test"
 	assert "github.com/stretchr/testify/assert"
 )
 

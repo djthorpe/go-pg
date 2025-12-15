@@ -14,8 +14,8 @@ package mypackage_test
 import (
   "testing"
 
-  pg "github.com/djthorpe/go-pg"
-  pgtest "github.com/djthorpe/go-pg/pkg/test"
+  pg "github.com/mutablelogic/go-pg"
+  pgtest "github.com/mutablelogic/go-pg/pkg/test"
 )
 
 var conn pgtest.Conn

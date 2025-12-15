@@ -1,4 +1,4 @@
-module github.com/djthorpe/go-pg
+module github.com/mutablelogic/go-pg
 
 go 1.24.0
 

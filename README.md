@@ -10,7 +10,7 @@ Postgresql Support for Go, built on top of [pgx](https://github.com/jackc/pgx). 
 * [PostgreSQL Manager](pkg/manager/README.md) for server administration with REST API and Prometheus metrics;
 * [Testing utilities](pkg/test/README.md) for integration testing with testcontainers.
 
-Documentation: <https://pkg.go.dev/github.com/djthorpe/go-pg>
+Documentation: <https://pkg.go.dev/github.com/mutablelogic/go-pg>
 
 ## Motivation
 
@@ -82,7 +82,7 @@ You can create a connection pool to a database server using the `pg.NewPool` fun
 
 ```go
 import (
-  pg "github.com/djthorpe/go-pg"
+  pg "github.com/mutablelogic/go-pg"
 )
 
 func main() {
@@ -398,7 +398,7 @@ the transaction will be committed. Transactions can be nested.
 PostgreSQL supports asynchronous notifications via `NOTIFY` and `LISTEN`. Use `pg.NewListener` to subscribe to channels:
 
 ```go
-import pg "github.com/djthorpe/go-pg"
+import pg "github.com/mutablelogic/go-pg"
 
 // Create a listener
 listener, err := pg.NewListener(ctx, pool, "my_channel")
@@ -431,7 +431,7 @@ if err := pool.Exec(ctx, `NOTIFY my_channel, 'hello world'`); err != nil {
 The package provides convenience functions for managing PostgreSQL schemas:
 
 ```go
-import pg "github.com/djthorpe/go-pg"
+import pg "github.com/mutablelogic/go-pg"
 
 // Check if a schema exists
 exists, err := pg.SchemaExists(ctx, conn, "myschema")
@@ -448,7 +448,7 @@ err := pg.SchemaDrop(ctx, conn, "myschema")
 The package provides typed errors for common PostgreSQL conditions:
 
 ```go
-import pg "github.com/djthorpe/go-pg"
+import pg "github.com/mutablelogic/go-pg"
 
 if err := conn.Get(ctx, &obj, req); err != nil {
   if errors.Is(err, pg.ErrNotFound) {

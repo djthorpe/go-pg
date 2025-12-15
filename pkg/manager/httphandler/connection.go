@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	// Packages
-	manager "github.com/djthorpe/go-pg/pkg/manager"
-	schema "github.com/djthorpe/go-pg/pkg/manager/schema"
+	manager "github.com/mutablelogic/go-pg/pkg/manager"
+	schema "github.com/mutablelogic/go-pg/pkg/manager/schema"
 	httprequest "github.com/mutablelogic/go-server/pkg/httprequest"
 	httpresponse "github.com/mutablelogic/go-server/pkg/httpresponse"
 )

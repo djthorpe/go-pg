@@ -9,7 +9,7 @@ import (
 
 	// Packages
 	kong "github.com/alecthomas/kong"
-	httpclient "github.com/djthorpe/go-pg/pkg/manager/httpclient"
+	httpclient "github.com/mutablelogic/go-pg/pkg/manager/httpclient"
 	client "github.com/mutablelogic/go-client"
 )
 

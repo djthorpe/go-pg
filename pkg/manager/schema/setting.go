@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	// Packages
-	pg "github.com/djthorpe/go-pg"
+	pg "github.com/mutablelogic/go-pg"
 )
 
 ///////////////////////////////////////////////////////////////////////////////

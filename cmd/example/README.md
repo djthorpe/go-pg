@@ -5,7 +5,7 @@ run this example, you will need to have docker installed (since a new PostgreSQL
 will be created for this example):
 
 ```bash
-go run github.com/djthorpe/go-pg/example@latest
+go run github.com/mutablelogic/go-pg/example@latest
 ```
 
 A [dataset](https://www.ssa.gov/oact/babynames/) of about 2.1 million baby names is
