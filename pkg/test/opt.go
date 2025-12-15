@@ -70,6 +70,14 @@ func OptPostgres(user, password, database string) Opt {
 	}
 }
 
+// OptPostgresSetting adds a PostgreSQL configuration setting via -c flag
+func OptPostgresSetting(key, value string) Opt {
+	return func(o *opts) error {
+		o.req.Cmd = append(o.req.Cmd, "-c", key+"="+value)
+		return nil
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 

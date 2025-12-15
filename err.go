@@ -21,6 +21,7 @@ const (
 	ErrNotFound
 	ErrNotImplemented
 	ErrBadParameter
+	ErrNotAvailable
 )
 
 func (e Err) Error() string {
@@ -33,6 +34,8 @@ func (e Err) Error() string {
 		return "not implemented"
 	case ErrBadParameter:
 		return "bad parameter"
+	case ErrNotAvailable:
+		return "not available"
 	default:
 		return fmt.Sprint("Unknown error ", int(e))
 	}

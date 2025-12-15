@@ -119,6 +119,18 @@ func OptCascade(v bool) Opt {
 	return OptSet("cascade", "")
 }
 
+func WithUser(v *string) Opt {
+	return OptSet("user", types.PtrString(v))
+}
+
+func WithOrderBy(v string) Opt {
+	return OptSet("order_by", v)
+}
+
+func WithOrderDir(v string) Opt {
+	return OptSet("order_dir", v)
+}
+
 func OptSet(k, v string) Opt {
 	return func(o *opt) error {
 		if v == "" {

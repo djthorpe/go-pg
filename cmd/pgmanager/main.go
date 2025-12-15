@@ -41,6 +41,7 @@ type CLI struct {
 	ObjectCommands
 	ServerCommands
 	SettingCommands
+	StatementCommands
 	TablespaceCommands
 }
 

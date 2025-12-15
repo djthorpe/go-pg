@@ -22,6 +22,7 @@ func RegisterHandlers(router *http.ServeMux, prefix string, manager *manager.Man
 	RegisterRoleHandlers(router, prefix, manager)
 	RegisterSchemaHandlers(router, prefix, manager)
 	RegisterSettingHandlers(router, prefix, manager)
+	RegisterStatementHandlers(router, prefix, manager)
 	RegisterTablespaceHandlers(router, prefix, manager)
 }
 
@@ -53,6 +54,8 @@ func httperr(err error) error {
 	case errors.Is(err, pg.ErrBadParameter):
 		return httpresponse.ErrBadRequest.With(err.Error())
 	case errors.Is(err, pg.ErrNotImplemented):
+		return httpresponse.ErrNotImplemented.With(err.Error())
+	case errors.Is(err, pg.ErrNotAvailable):
 		return httpresponse.ErrNotImplemented.With(err.Error())
 	default:
 		return httpresponse.ErrInternalError.With(err.Error())

@@ -14,6 +14,9 @@ import (
 
 type Manager struct {
 	conn pg.PoolConn
+
+	// Feature flags
+	statStatementsAvailable bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,13 +30,20 @@ func New(ctx context.Context, conn pg.PoolConn) (*Manager, error) {
 	self := new(Manager)
 	self.conn = conn.With("schema", schema.CatalogSchema).(pg.PoolConn)
 
-	// Bootstrap dblink
-	if err := schema.Bootstrap(ctx, self.conn); err != nil {
+	// Bootstrap extensions
+	result, err := schema.Bootstrap(ctx, self.conn)
+	if err != nil {
 		return nil, err
 	}
+	self.statStatementsAvailable = result.StatStatementsAvailable
 
 	// Return success
 	return self, nil
+}
+
+// StatStatementsAvailable returns true if pg_stat_statements extension is available
+func (manager *Manager) StatStatementsAvailable() bool {
+	return manager.statStatementsAvailable
 }
 
 // Iterate through all the databases
