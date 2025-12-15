@@ -3,7 +3,7 @@
 The `manager` package provides an API for managing PostgreSQL server resources. It enables introspection and management of databases, roles, schemas, tables, and other PostgreSQL objects through both a direct Go API and HTTP interfaces.
 There are unit and integration tests included.
 
-To test the packcge:
+To test the package:
 
 ```bash
 git clone github.com/djthorpe/go-pg
