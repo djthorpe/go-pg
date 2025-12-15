@@ -1,7 +1,13 @@
 # Path parameters
-GO ?= $(shell which go)
+GO ?= $(shell which go  2>/dev/null)
+DOCKER ?= $(shell which docker 2>/dev/null)
 BUILDDIR ?= build
 CMDDIR=$(wildcard cmd/*)
+
+# Set OS and Architecture
+ARCH ?= $(shell arch | tr A-Z a-z | sed 's/x86_64/amd64/' | sed 's/i386/amd64/' | sed 's/armv7l/arm/' | sed 's/aarch64/arm64/')
+OS ?= $(shell uname | tr A-Z a-z)
+VERSION ?= $(shell git describe --tags --always | sed 's/^v//')
 
 # Build flags
 BUILD_MODULE = $(shell cat go.mod | head -1 | cut -d ' ' -f 2)
@@ -12,14 +18,42 @@ BUILD_LD_FLAGS += -X $(BUILD_MODULE)/pkg/version.GitHash=$(shell git rev-parse H
 BUILD_LD_FLAGS += -X $(BUILD_MODULE)/pkg/version.GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 BUILD_FLAGS = -ldflags "-s -w ${BUILD_LD_FLAGS}"
 
+# Docker
+DOCKER_REPO ?= ghcr.io/djthorpe/go-pg
+DOCKER_SOURCE ?= ${BUILD_MODULE}
+DOCKER_TAG = ${DOCKER_REPO}-${OS}-${ARCH}:${VERSION}
+
 # All targets
 all: tidy $(CMDDIR)
 
 # Rules for building
 .PHONY: $(CMDDIR)
-$(CMDDIR): mkdir
+$(CMDDIR): go-dep mkdir
 	@echo 'building $@'
 	@$(GO) build $(BUILD_FLAGS) -o ${BUILDDIR}/$(shell basename $@) ./$@
+
+# Build the docker image
+.PHONY: docker
+docker: docker-dep ${NPM_DIR}
+	@echo build docker image ${DOCKER_TAG} OS=${OS} ARCH=${ARCH} SOURCE=${DOCKER_SOURCE} VERSION=${VERSION}
+	@${DOCKER} build \
+		--tag ${DOCKER_TAG} \
+		--build-arg ARCH=${ARCH} \
+		--build-arg OS=${OS} \
+		--build-arg SOURCE=${DOCKER_SOURCE} \
+		--build-arg VERSION=${VERSION} \
+		-f etc/Dockerfile .
+
+# Push docker container
+.PHONY: docker-push
+docker-push: docker-dep 
+	@echo push docker image: ${DOCKER_TAG}
+	@${DOCKER} push ${DOCKER_TAG}
+
+# Print out the version
+.PHONY: docker-version
+docker-version: docker-dep 
+	@echo "tag=${VERSION}"
 
 # Rules for testing
 .PHONY: test
@@ -33,7 +67,7 @@ test: tidy
 mkdir:
 	@install -d $(BUILDDIR)
 
-.PHONY: tidy
+.PHONY: go-dep tidy
 tidy: 
 	@echo 'go tidy'
 	@$(GO) mod tidy
@@ -43,3 +77,14 @@ clean: tidy
 	@echo 'clean'
 	@rm -fr $(BUILDDIR)
 	@$(GO) clean
+
+###############################################################################
+# DEPENDENCIES
+
+.PHONY: go-dep
+go-dep:
+	@test -f "${GO}" && test -x "${GO}"  || (echo "Missing go binary" && exit 1)
+
+.PHONY: docker-dep
+docker-dep:
+	@test -f "${DOCKER}" && test -x "${DOCKER}"  || (echo "Missing docker binary" && exit 1)

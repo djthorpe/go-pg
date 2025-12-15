@@ -1,0 +1,23 @@
+ARG OS=linux
+ARG ARCH=amd64
+
+# Build stage
+FROM --platform=${OS}/${ARCH} golang:1.24 AS builder
+WORKDIR /usr/src/app
+COPY . .
+RUN OS=${OS} ARCH=${ARCH} make
+
+# Runtime stage
+FROM --platform=${OS}/${ARCH} debian:bookworm-slim
+ARG SOURCE=github.com/djthorpe/go-pg
+COPY --from=builder /usr/src/app/build/ /usr/local/bin/
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Labels
+LABEL org.opencontainers.image.source=https://${SOURCE}
+
+# Entrypoint when running the server
+EXPOSE 80 443
+ENTRYPOINT ["/usr/local/bin/pgmanager"]
