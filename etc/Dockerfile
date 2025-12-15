@@ -1,11 +1,13 @@
 ARG OS=linux
 ARG ARCH=amd64
 
+# Creates a docker image for pgmanager
+
 # Build stage
 FROM --platform=${OS}/${ARCH} golang:1.24 AS builder
 WORKDIR /usr/src/app
 COPY . .
-RUN OS=${OS} ARCH=${ARCH} make
+RUN OS=${OS} ARCH=${ARCH} make cmd/pgmanager
 
 # Runtime stage
 FROM --platform=${OS}/${ARCH} debian:bookworm-slim
