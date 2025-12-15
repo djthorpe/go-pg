@@ -18,14 +18,16 @@ const (
 
 const (
 	// Maximum number of items to return in a list query, for each type
-	RoleListLimit       = 100
-	DatabaseListLimit   = 100
-	SchemaListLimit     = 100
-	ObjectListLimit     = 100
-	ConnectionListLimit = 100
-	TablespaceListLimit = 100
-	ExtensionListLimit  = 100
-	SettingListLimit    = 500
+	RoleListLimit            = 100
+	DatabaseListLimit        = 100
+	SchemaListLimit          = 100
+	ObjectListLimit          = 100
+	ConnectionListLimit      = 100
+	TablespaceListLimit      = 100
+	ExtensionListLimit       = 100
+	SettingListLimit         = 500
+	StatementListLimit       = 100
+	ReplicationSlotListLimit = 100
 )
 
 const (

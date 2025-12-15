@@ -27,6 +27,7 @@ func NewPgxContainer(ctx context.Context, name string, verbose bool, tracer pg.T
 		OptEnv("POSTGRES_REPLICATION_PASSWORD", "password"),
 		OptPostgres("postgres", "password", name),                            // User, Password, Database
 		OptPostgresSetting("shared_preload_libraries", "pg_stat_statements"), // Enable pg_stat_statements
+		OptPostgresSetting("wal_level", "logical"),                           // Enable logical replication
 	)
 	if err != nil {
 		return nil, nil, err

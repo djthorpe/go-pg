@@ -17,9 +17,8 @@ type StatementCommands struct {
 
 type ListStatementCommand struct {
 	Database string  `name:"database" help:"Filter by database name"`
-	User     string  `name:"user" help:"Filter by user name"`
-	OrderBy  string  `name:"order-by" help:"Order by field (calls, total_time, mean_time, rows)"`
-	OrderDir string  `name:"order-dir" help:"Order direction (asc, desc)" default:"desc"`
+	Role     string  `name:"role" help:"Filter by role name"`
+	Sort     string  `name:"sort" help:"Sort by field (calls, rows, total_ms, min_ms, max_ms, mean_ms)"`
 	Offset   uint64  `name:"offset" help:"Offset for pagination"`
 	Limit    *uint64 `name:"limit" help:"Limit for pagination"`
 }
@@ -40,14 +39,11 @@ func (cmd *ListStatementCommand) Run(ctx *Globals) error {
 	if cmd.Database != "" {
 		opts = append(opts, httpclient.WithDatabase(&cmd.Database))
 	}
-	if cmd.User != "" {
-		opts = append(opts, httpclient.WithUser(&cmd.User))
+	if cmd.Role != "" {
+		opts = append(opts, httpclient.WithRole(&cmd.Role))
 	}
-	if cmd.OrderBy != "" {
-		opts = append(opts, httpclient.WithOrderBy(cmd.OrderBy))
-	}
-	if cmd.OrderDir != "" {
-		opts = append(opts, httpclient.WithOrderDir(cmd.OrderDir))
+	if cmd.Sort != "" {
+		opts = append(opts, httpclient.WithSort(cmd.Sort))
 	}
 
 	// List statements

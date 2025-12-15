@@ -1,9 +1,8 @@
 package schema
 
 import (
-	"fmt"
+	"encoding/json"
 	"strings"
-	"time"
 
 	// Packages
 	pg "github.com/djthorpe/go-pg"
@@ -14,29 +13,16 @@ import (
 
 // Statement represents a row from pg_stat_statements
 type Statement struct {
-	UserID            uint64  `json:"userid"`                        // OID of user who executed the statement
-	UserName          string  `json:"username,omitempty"`            // Name of the user (joined from pg_roles)
-	DatabaseID        uint64  `json:"dbid"`                          // OID of database in which the statement was executed
-	DatabaseName      string  `json:"database,omitempty"`            // Name of the database (joined from pg_database)
-	QueryID           int64   `json:"queryid"`                       // Hash code to identify identical normalized queries
-	Query             string  `json:"query"`                         // Text of a representative statement
-	Calls             int64   `json:"calls"`                         // Number of times the statement was executed
-	TotalExecTime     float64 `json:"total_exec_time"`               // Total time spent executing the statement, in milliseconds
-	MinExecTime       float64 `json:"min_exec_time"`                 // Minimum time spent executing the statement, in milliseconds
-	MaxExecTime       float64 `json:"max_exec_time"`                 // Maximum time spent executing the statement, in milliseconds
-	MeanExecTime      float64 `json:"mean_exec_time"`                // Mean time spent executing the statement, in milliseconds
-	StddevExecTime    float64 `json:"stddev_exec_time"`              // Population standard deviation of time spent executing the statement
-	Rows              int64   `json:"rows"`                          // Total number of rows retrieved or affected by the statement
-	SharedBlksHit     int64   `json:"shared_blks_hit,omitempty"`     // Total number of shared block cache hits by the statement
-	SharedBlksRead    int64   `json:"shared_blks_read,omitempty"`    // Total number of shared blocks read by the statement
-	SharedBlksDirtied int64   `json:"shared_blks_dirtied,omitempty"` // Total number of shared blocks dirtied by the statement
-	SharedBlksWritten int64   `json:"shared_blks_written,omitempty"` // Total number of shared blocks written by the statement
-	LocalBlksHit      int64   `json:"local_blks_hit,omitempty"`      // Total number of local block cache hits by the statement
-	LocalBlksRead     int64   `json:"local_blks_read,omitempty"`     // Total number of local blocks read by the statement
-	LocalBlksDirtied  int64   `json:"local_blks_dirtied,omitempty"`  // Total number of local blocks dirtied by the statement
-	LocalBlksWritten  int64   `json:"local_blks_written,omitempty"`  // Total number of local blocks written by the statement
-	TempBlksRead      int64   `json:"temp_blks_read,omitempty"`      // Total number of temp blocks read by the statement
-	TempBlksWritten   int64   `json:"temp_blks_written,omitempty"`   // Total number of temp blocks written by the statement
+	Role     string  `json:"role,omitempty"`     // Name of the role who executed the statement
+	Database string  `json:"database,omitempty"` // Name of the database in which the statement was executed
+	QueryID  int64   `json:"query_id"`           // Hash code to identify identical normalized queries
+	Query    string  `json:"query"`              // Text of a representative statement
+	Calls    int64   `json:"calls"`              // Number of times the statement was executed
+	Rows     int64   `json:"rows"`               // Total number of rows retrieved or affected by the statement
+	Total    float64 `json:"total_ms"`           // Total time spent executing the statement, in milliseconds
+	Min      float64 `json:"min_ms"`             // Minimum time spent executing the statement, in milliseconds
+	Max      float64 `json:"max_ms"`             // Maximum time spent executing the statement, in milliseconds
+	Mean     float64 `json:"mean_ms"`            // Mean time spent executing the statement, in milliseconds
 }
 
 // StatementList is a list of statements with a total count
@@ -52,66 +38,46 @@ type StatementListRequest struct {
 	// Filter by database name
 	Database *string `json:"database,omitempty"`
 
-	// Filter by user name
-	User *string `json:"user,omitempty"`
+	// Filter by role name
+	Role *string `json:"role,omitempty"`
 
-	// Order by field (calls, total_exec_time, mean_exec_time, rows)
-	OrderBy string `json:"order_by,omitempty"`
-
-	// Order direction (asc, desc) - default desc
-	OrderDir string `json:"order_dir,omitempty"`
+	// Sort by field (calls, rows, total_ms, min_ms, max_ms, mean_ms)
+	// All sort DESC except min_ms which sorts ASC
+	Sort string `json:"sort,omitempty"`
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// GLOBALS
-
-const (
-	StatementListLimit = 100
-)
 
 ///////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (s Statement) String() string {
-	// Truncate query for display
-	query := s.Query
-	if len(query) > 60 {
-		query = query[:57] + "..."
+	data, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err.Error()
 	}
-	return fmt.Sprintf("Statement{query=%q calls=%d total_time=%.2fms mean_time=%.2fms rows=%d}",
-		query, s.Calls, s.TotalExecTime, s.MeanExecTime, s.Rows)
+	return string(data)
 }
 
 func (l StatementList) String() string {
-	var result strings.Builder
-	result.WriteString(fmt.Sprintf("StatementList{count=%d body=[", l.Count))
-	for i, s := range l.Body {
-		if i > 0 {
-			result.WriteString(", ")
-		}
-		result.WriteString(s.String())
+	data, err := json.MarshalIndent(l, "", "  ")
+	if err != nil {
+		return err.Error()
 	}
-	result.WriteString("]}")
-	return result.String()
+	return string(data)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // SELECTOR
 
-func (r *StatementListRequest) Select(bind *pg.Bind, op pg.Op) (string, error) {
-	if op != pg.List {
-		return "", pg.ErrNotImplemented.Withf("unsupported operation %q", op)
-	}
-
+func (r StatementListRequest) Select(bind *pg.Bind, op pg.Op) (string, error) {
 	// Build WHERE clause
 	var where []string
 	if r.Database != nil && *r.Database != "" {
 		bind.Set("database", *r.Database)
 		where = append(where, "d.datname = @database")
 	}
-	if r.User != nil && *r.User != "" {
-		bind.Set("user", *r.User)
-		where = append(where, "u.rolname = @user")
+	if r.Role != nil && *r.Role != "" {
+		bind.Set("role", *r.Role)
+		where = append(where, "u.rolname = @role")
 	}
 
 	if len(where) > 0 {
@@ -120,35 +86,38 @@ func (r *StatementListRequest) Select(bind *pg.Bind, op pg.Op) (string, error) {
 		bind.Set("where", "")
 	}
 
-	// Build ORDER BY clause
-	orderBy := "total_exec_time"
-	if r.OrderBy != "" {
-		switch strings.ToLower(r.OrderBy) {
-		case "calls":
-			orderBy = "calls"
-		case "total_exec_time", "total_time":
-			orderBy = "total_exec_time"
-		case "mean_exec_time", "mean_time":
-			orderBy = "mean_exec_time"
-		case "rows":
-			orderBy = "rows"
-		case "min_exec_time", "min_time":
-			orderBy = "min_exec_time"
-		case "max_exec_time", "max_time":
-			orderBy = "max_exec_time"
-		}
+	// Build ORDER BY clause - always order by database, query_id first
+	var sortClause string
+	switch strings.ToLower(r.Sort) {
+	case "":
+		// No additional sort
+	case "calls":
+		sortClause = ", calls DESC"
+	case "rows":
+		sortClause = ", rows DESC"
+	case "total_ms":
+		sortClause = ", total_exec_time DESC"
+	case "min_ms":
+		sortClause = ", min_exec_time ASC"
+	case "max_ms":
+		sortClause = ", max_exec_time DESC"
+	case "mean_ms":
+		sortClause = ", mean_exec_time DESC"
+	default:
+		return "", pg.ErrBadParameter.Withf("invalid sort parameter %q", r.Sort)
 	}
-
-	orderDir := "DESC"
-	if r.OrderDir != "" && strings.ToUpper(r.OrderDir) == "ASC" {
-		orderDir = "ASC"
-	}
-	bind.Set("orderby", fmt.Sprintf("ORDER BY %s %s", orderBy, orderDir))
+	bind.Set("orderby", "ORDER BY database ASC, queryid ASC"+sortClause)
 
 	// Set offset/limit
 	r.OffsetLimit.Bind(bind, StatementListLimit)
 
-	return statementList, nil
+	// Return query
+	switch op {
+	case pg.List:
+		return statementList, nil
+	default:
+		return "", pg.ErrNotImplemented.Withf("unsupported StatementListRequest operation %q", op)
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -156,11 +125,9 @@ func (r *StatementListRequest) Select(bind *pg.Bind, op pg.Op) (string, error) {
 
 func (s *Statement) Scan(row pg.Row) error {
 	return row.Scan(
-		&s.UserID, &s.UserName, &s.DatabaseID, &s.DatabaseName, &s.QueryID, &s.Query,
-		&s.Calls, &s.TotalExecTime, &s.MinExecTime, &s.MaxExecTime, &s.MeanExecTime, &s.StddevExecTime,
-		&s.Rows, &s.SharedBlksHit, &s.SharedBlksRead, &s.SharedBlksDirtied, &s.SharedBlksWritten,
-		&s.LocalBlksHit, &s.LocalBlksRead, &s.LocalBlksDirtied, &s.LocalBlksWritten,
-		&s.TempBlksRead, &s.TempBlksWritten,
+		&s.Role, &s.Database, &s.QueryID, &s.Query,
+		&s.Calls, &s.Rows,
+		&s.Total, &s.Min, &s.Max, &s.Mean,
 	)
 }
 
@@ -183,29 +150,16 @@ func (l *StatementList) ScanCount(row pg.Row) error {
 // pg_stat_statements query - joins with pg_roles and pg_database for names
 const statementSelect = `
 	SELECT
-		s.userid::BIGINT,
-		COALESCE(u.rolname, '') AS username,
-		s.dbid::BIGINT,
+		COALESCE(u.rolname, '') AS role,
 		COALESCE(d.datname, '') AS database,
 		s.queryid,
 		s.query,
 		s.calls,
+		s.rows,
 		s.total_exec_time,
 		s.min_exec_time,
 		s.max_exec_time,
-		s.mean_exec_time,
-		s.stddev_exec_time,
-		s.rows,
-		s.shared_blks_hit,
-		s.shared_blks_read,
-		s.shared_blks_dirtied,
-		s.shared_blks_written,
-		s.local_blks_hit,
-		s.local_blks_read,
-		s.local_blks_dirtied,
-		s.local_blks_written,
-		s.temp_blks_read,
-		s.temp_blks_written
+		s.mean_exec_time
 	FROM
 		public.pg_stat_statements s
 	LEFT JOIN
@@ -215,6 +169,3 @@ const statementSelect = `
 `
 
 const statementList = `WITH q AS (` + statementSelect + `) SELECT * FROM q ${where} ${orderby}`
-
-// Ensure time is imported (used in potential future extensions)
-var _ = time.Now

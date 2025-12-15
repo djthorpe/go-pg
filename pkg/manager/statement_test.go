@@ -44,20 +44,18 @@ func Test_Manager_ListStatements(t *testing.T) {
 		t.Logf("Found %d statements", list.Count)
 	})
 
-	t.Run("OrderByCalls", func(t *testing.T) {
+	t.Run("SortByCalls", func(t *testing.T) {
 		list, err := mgr.ListStatements(context.TODO(), schema.StatementListRequest{
-			OrderBy:  "calls",
-			OrderDir: "desc",
+			Sort: "calls",
 		})
 		assert.NoError(err)
 		assert.NotNil(list)
-		t.Logf("Found %d statements ordered by calls", list.Count)
+		t.Logf("Found %d statements sorted by calls", list.Count)
 	})
 
-	t.Run("OrderByTotalTime", func(t *testing.T) {
+	t.Run("SortByTotalTime", func(t *testing.T) {
 		list, err := mgr.ListStatements(context.TODO(), schema.StatementListRequest{
-			OrderBy:  "total_exec_time",
-			OrderDir: "desc",
+			Sort: "total_ms",
 		})
 		assert.NoError(err)
 		assert.NotNil(list)

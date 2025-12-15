@@ -36,6 +36,7 @@ type CLI struct {
 	ConnectionCommands
 	DatabaseCommands
 	ExtensionCommands
+	ReplicationSlotCommands
 	RoleCommands
 	SchemaCommands
 	ObjectCommands
