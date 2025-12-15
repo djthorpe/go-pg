@@ -77,7 +77,7 @@ func (c *Conn) Begin(t *testing.T) *Conn {
 	return &Conn{c.PoolConn, t}
 }
 
-// End a test
+// Close ends the test.
 func (c *Conn) Close() {
 	if c.t != nil {
 		c.t.Log("End", c.t.Name())

@@ -116,13 +116,16 @@ func (l *listener) Unlisten(ctx context.Context, topic string) error {
 // WaitForNotification blocks until receiving a notification and returns it.
 func (l *listener) WaitForNotification(ctx context.Context) (*Notification, error) {
 	l.Lock()
-	defer l.Unlock()
-
-	// Wait for a notification
+	// Check if the connection is valid
 	if l.conn == nil || l.conn.Conn() == nil {
+		l.Unlock()
 		return nil, fmt.Errorf("connection is nil")
 	}
-	n, err := l.conn.Conn().WaitForNotification(ctx)
+	conn := l.conn.Conn()
+	l.Unlock()
+
+	// Wait for a notification (without holding the lock)
+	n, err := conn.WaitForNotification(ctx)
 	if err != nil {
 		return nil, err
 	}

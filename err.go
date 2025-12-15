@@ -24,6 +24,7 @@ const (
 	ErrNotAvailable
 )
 
+// Error returns the string representation of the error.
 func (e Err) Error() string {
 	switch e {
 	case ErrSuccess:
@@ -41,10 +42,12 @@ func (e Err) Error() string {
 	}
 }
 
+// With returns the error with additional context appended.
 func (e Err) With(a ...any) error {
 	return fmt.Errorf("%w: %s", e, fmt.Sprint(a...))
 }
 
+// Withf returns the error with formatted context appended.
 func (e Err) Withf(format string, a ...any) error {
 	return fmt.Errorf("%w: %s", e, fmt.Sprintf(format, a...))
 }

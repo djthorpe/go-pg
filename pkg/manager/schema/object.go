@@ -23,14 +23,21 @@ type ObjectMeta struct {
 	Acl   ACLList `json:"acl,omitempty" help:"Access privileges"`
 }
 
+// TableMeta contains metadata specific to tables
+type TableMeta struct {
+	LiveTuples *int64 `json:"live_tuples,omitempty" help:"Number of live tuples"`
+	DeadTuples *int64 `json:"dead_tuples,omitempty" help:"Number of dead tuples"`
+}
+
 type Object struct {
 	Oid      uint32 `json:"oid"`
 	Database string `json:"database,omitempty" help:"Database"`
 	Schema   string `json:"schema,omitempty" help:"Schema"`
 	Type     string `json:"type,omitempty" help:"Type"`
 	ObjectMeta
-	Tablespace *string `json:"tablespace,omitempty" help:"Tablespace"`
-	Size       uint64  `json:"bytes,omitempty" help:"Size of object in bytes"`
+	Tablespace *string    `json:"tablespace,omitempty" help:"Tablespace"`
+	Size       uint64     `json:"bytes,omitempty" help:"Size of object in bytes"`
+	Table      *TableMeta `json:"table,omitempty" help:"Table-specific metadata"`
 }
 
 type ObjectListRequest struct {
@@ -50,6 +57,14 @@ type ObjectList struct {
 
 func (o ObjectMeta) String() string {
 	data, err := json.MarshalIndent(o, "", "  ")
+	if err != nil {
+		return err.Error()
+	}
+	return string(data)
+}
+
+func (t TableMeta) String() string {
+	data, err := json.MarshalIndent(t, "", "  ")
 	if err != nil {
 		return err.Error()
 	}
@@ -159,8 +174,9 @@ func (o ObjectListRequest) Select(bind *pg.Bind, op pg.Op) (string, error) {
 
 func (o *Object) Scan(row pg.Row) error {
 	var priv []string
+	var liveTuples, deadTuples *int64
 	o.Acl = ACLList{}
-	if err := row.Scan(&o.Oid, &o.Database, &o.Schema, &o.Name, &o.Type, &o.Owner, &priv, &o.Tablespace, &o.Size); err != nil {
+	if err := row.Scan(&o.Oid, &o.Database, &o.Schema, &o.Name, &o.Type, &o.Owner, &priv, &o.Tablespace, &o.Size, &liveTuples, &deadTuples); err != nil {
 		return err
 	}
 	for _, v := range priv {
@@ -169,6 +185,13 @@ func (o *Object) Scan(row pg.Row) error {
 			return err
 		}
 		o.Acl.Append(item)
+	}
+	// Only set Table if we have tuple data (i.e., it's a table)
+	if liveTuples != nil || deadTuples != nil {
+		o.Table = &TableMeta{
+			LiveTuples: liveTuples,
+			DeadTuples: deadTuples,
+		}
 	}
 	return nil
 }
@@ -225,7 +248,7 @@ func (o ObjectName) Validate() error {
 // SQL
 
 const (
-	ObjectDef    = `object ("oid" OID, "database" TEXT, "schema" TEXT, "name" TEXT, "type" TEXT, "owner" TEXT, "acl" TEXT[], "tablespace" TEXT, "size" BIGINT)`
+	ObjectDef    = `object ("oid" OID, "database" TEXT, "schema" TEXT, "name" TEXT, "type" TEXT, "owner" TEXT, "acl" TEXT[], "tablespace" TEXT, "size" BIGINT, "live_tuples" BIGINT, "dead_tuples" BIGINT)`
 	objectSelect = `
 		WITH objects AS (
 			SELECT
@@ -252,7 +275,9 @@ const (
 				CASE C.relkind
 					WHEN 'r' THEN pg_table_size(C.oid)
 					ELSE pg_relation_size(C.oid)
-				END AS size
+				END AS size,
+				S.n_live_tup AS live_tuples,
+				S.n_dead_tup AS dead_tuples
 			FROM
 				pg_class C
 			JOIN
@@ -261,6 +286,8 @@ const (
 				pg_roles R ON R.oid = C.relowner
 			LEFT JOIN
 				pg_tablespace T ON T.oid = C.reltablespace
+			LEFT JOIN
+				pg_stat_user_tables S ON S.relid = C.oid
 			WHERE
 				N.nspname NOT LIKE 'pg_%' AND N.nspname != 'information_schema' AND C.relkind != 't'
 		) SELECT * FROM objects

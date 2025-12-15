@@ -29,8 +29,8 @@ type Bind struct {
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-// Create a new Bind object with the given name/value pairs
-// Returns nil if the number of arguments is not even
+// NewBind creates a new Bind object with the given name/value pairs.
+// Returns nil if the number of arguments is not even.
 func NewBind(pairs ...any) *Bind {
 	if len(pairs)%2 != 0 {
 		return nil
@@ -50,7 +50,7 @@ func NewBind(pairs ...any) *Bind {
 	return &Bind{vars: vars}
 }
 
-// Make a copy of the bind object
+// Copy creates a copy of the bind object with additional name/value pairs.
 func (bind *Bind) Copy(pairs ...any) *Bind {
 	if len(pairs)%2 != 0 {
 		return nil
@@ -99,7 +99,7 @@ func (bind *Bind) String() string {
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// Set a bind var, and return the parameter name
+// Set sets a bind var and returns the parameter name.
 func (bind *Bind) Set(key string, value any) string {
 	bind.Lock()
 	defer bind.Unlock()
@@ -111,14 +111,14 @@ func (bind *Bind) Set(key string, value any) string {
 	return "@" + key
 }
 
-// Get a bind var
+// Get returns a bind var by key.
 func (bind *Bind) Get(key string) any {
 	bind.RLock()
 	defer bind.RUnlock()
 	return bind.vars[key]
 }
 
-// Return true if there is a bind var with the given key
+// Has returns true if there is a bind var with the given key.
 func (bind *Bind) Has(key string) bool {
 	bind.RLock()
 	defer bind.RUnlock()
@@ -127,15 +127,15 @@ func (bind *Bind) Has(key string) bool {
 	return ok
 }
 
-// Delete a bind var
+// Del deletes a bind var.
 func (bind *Bind) Del(key string) {
 	bind.Lock()
 	defer bind.Unlock()
 	delete(bind.vars, key)
 }
 
-// Join a bind var with a separator, when it is a
-// []any and return the result as a string. Returns
+// Join joins a bind var with a separator when it is a
+// []any and returns the result as a string. Returns
 // an empty string if the key does not exist.
 func (bind *Bind) Join(key, sep string) string {
 	bind.RLock()
@@ -154,11 +154,11 @@ func (bind *Bind) Join(key, sep string) string {
 	}
 }
 
-// Append a bind var to a list. Returns false if the key
+// Append appends a bind var to a list. Returns false if the key
 // is not a list, or the value is not a list.
 func (bind *Bind) Append(key string, value any) bool {
-	bind.RLock()
-	defer bind.RUnlock()
+	bind.Lock()
+	defer bind.Unlock()
 
 	// Create a new list if it doesn't exist
 	if _, ok := bind.vars[key]; !ok {
@@ -180,7 +180,7 @@ func (bind *Bind) Append(key string, value any) bool {
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - QUERY
 
-// Query a row and return the result
+// QueryRow queries a single row and returns the result.
 func (bind *Bind) QueryRow(ctx context.Context, conn pgx.Tx, query string) pgx.Row {
 	bind.RLock()
 	defer bind.RUnlock()
@@ -227,7 +227,7 @@ func (bind *Bind) Query(ctx context.Context, conn pgx.Tx, query string) (pgx.Row
 	return conn.Query(ctx, bind.Replace(query), bind.vars)
 }
 
-// Execute a query
+// Exec executes a query.
 func (bind *Bind) Exec(ctx context.Context, conn pgx.Tx, query string) error {
 	bind.RLock()
 	defer bind.RUnlock()
@@ -260,7 +260,7 @@ func (bind *Bind) queuerow(batch *pgx.Batch, query string, reader Reader) {
 ///////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-// Return a query string with ${subtitution} replaced by the values:
+// Replace returns a query string with ${subtitution} replaced by the values:
 //   - ${key} => value
 //   - ${'key'} => 'value'
 //   - ${"key"} => "value"

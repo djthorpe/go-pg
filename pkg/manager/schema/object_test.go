@@ -440,3 +440,154 @@ func Test_ObjectListRequest_String(t *testing.T) {
 		assert.False(hasType)
 	})
 }
+
+func Test_TableMeta_String(t *testing.T) {
+	assert := assert.New(t)
+
+	t.Run("WithValues", func(t *testing.T) {
+		live := int64(1000)
+		dead := int64(50)
+		tm := schema.TableMeta{
+			LiveTuples: &live,
+			DeadTuples: &dead,
+		}
+		str := tm.String()
+		assert.NotEmpty(str)
+
+		var parsed map[string]interface{}
+		err := json.Unmarshal([]byte(str), &parsed)
+		assert.NoError(err)
+		assert.Equal(float64(1000), parsed["live_tuples"])
+		assert.Equal(float64(50), parsed["dead_tuples"])
+	})
+
+	t.Run("NilValues", func(t *testing.T) {
+		tm := schema.TableMeta{}
+		str := tm.String()
+		assert.NotEmpty(str)
+
+		var parsed map[string]interface{}
+		err := json.Unmarshal([]byte(str), &parsed)
+		assert.NoError(err)
+		_, hasLive := parsed["live_tuples"]
+		_, hasDead := parsed["dead_tuples"]
+		assert.False(hasLive)
+		assert.False(hasDead)
+	})
+
+	t.Run("OnlyLiveTuples", func(t *testing.T) {
+		live := int64(500)
+		tm := schema.TableMeta{
+			LiveTuples: &live,
+		}
+		str := tm.String()
+
+		var parsed map[string]interface{}
+		err := json.Unmarshal([]byte(str), &parsed)
+		assert.NoError(err)
+		assert.Equal(float64(500), parsed["live_tuples"])
+		_, hasDead := parsed["dead_tuples"]
+		assert.False(hasDead)
+	})
+
+	t.Run("ZeroValues", func(t *testing.T) {
+		live := int64(0)
+		dead := int64(0)
+		tm := schema.TableMeta{
+			LiveTuples: &live,
+			DeadTuples: &dead,
+		}
+		str := tm.String()
+
+		var parsed map[string]interface{}
+		err := json.Unmarshal([]byte(str), &parsed)
+		assert.NoError(err)
+		assert.Equal(float64(0), parsed["live_tuples"])
+		assert.Equal(float64(0), parsed["dead_tuples"])
+	})
+}
+
+func Test_Object_WithTableMeta(t *testing.T) {
+	assert := assert.New(t)
+
+	t.Run("TableWithMeta", func(t *testing.T) {
+		live := int64(1000)
+		dead := int64(50)
+		o := schema.Object{
+			Oid:      16384,
+			Database: "mydb",
+			Schema:   "public",
+			Type:     "TABLE",
+			ObjectMeta: schema.ObjectMeta{
+				Name:  "users",
+				Owner: "postgres",
+			},
+			Size: 8192,
+			Table: &schema.TableMeta{
+				LiveTuples: &live,
+				DeadTuples: &dead,
+			},
+		}
+		str := o.String()
+		assert.NotEmpty(str)
+
+		var parsed map[string]interface{}
+		err := json.Unmarshal([]byte(str), &parsed)
+		assert.NoError(err)
+		assert.Equal("TABLE", parsed["type"])
+		assert.Equal("users", parsed["name"])
+
+		table, hasTable := parsed["table"].(map[string]interface{})
+		assert.True(hasTable)
+		assert.Equal(float64(1000), table["live_tuples"])
+		assert.Equal(float64(50), table["dead_tuples"])
+	})
+
+	t.Run("IndexWithoutTableMeta", func(t *testing.T) {
+		o := schema.Object{
+			Oid:      16385,
+			Database: "mydb",
+			Schema:   "public",
+			Type:     "INDEX",
+			ObjectMeta: schema.ObjectMeta{
+				Name:  "users_pkey",
+				Owner: "postgres",
+			},
+			Size:  4096,
+			Table: nil,
+		}
+		str := o.String()
+		assert.NotEmpty(str)
+
+		var parsed map[string]interface{}
+		err := json.Unmarshal([]byte(str), &parsed)
+		assert.NoError(err)
+		assert.Equal("INDEX", parsed["type"])
+		assert.Equal("users_pkey", parsed["name"])
+
+		_, hasTable := parsed["table"]
+		assert.False(hasTable, "INDEX should not have table metadata")
+	})
+
+	t.Run("ViewWithoutTableMeta", func(t *testing.T) {
+		o := schema.Object{
+			Oid:      16386,
+			Database: "mydb",
+			Schema:   "public",
+			Type:     "VIEW",
+			ObjectMeta: schema.ObjectMeta{
+				Name:  "active_users",
+				Owner: "postgres",
+			},
+			Table: nil,
+		}
+		str := o.String()
+
+		var parsed map[string]interface{}
+		err := json.Unmarshal([]byte(str), &parsed)
+		assert.NoError(err)
+		assert.Equal("VIEW", parsed["type"])
+		_, hasTable := parsed["table"]
+		assert.False(hasTable, "VIEW should not have table metadata")
+	})
+}

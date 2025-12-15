@@ -15,7 +15,7 @@ type Client struct {
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-// Create a new client
+// New creates a new HTTP client for the PostgreSQL management API.
 func New(url string, opts ...client.ClientOpt) (*Client, error) {
 	c := new(Client)
 	if client, err := client.New(append(opts, client.OptEndpoint(url))...); err != nil {

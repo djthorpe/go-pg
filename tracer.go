@@ -26,7 +26,7 @@ type TraceFn func(context.Context, string, any, error)
 //////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-// Create a new query tracer
+// NewTracer creates a new query tracer.
 func NewTracer(fn TraceFn) *tracer {
 	if fn == nil {
 		return nil
