@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -47,6 +48,11 @@ func (cmd *RunServer) Run(ctx *Globals) error {
 	}
 	if cmd.PG.User != "" || cmd.PG.Password != "" {
 		opts = append(opts, pg.WithCredentials(cmd.PG.User, cmd.PG.Password))
+	}
+	if ctx.Debug {
+		opts = append(opts, pg.WithTrace(func(ctx context.Context, query string, args any, err error) {
+			fmt.Println("PG TRACE:", query, args, err)
+		}))
 	}
 
 	// Create a pool connection

@@ -117,3 +117,30 @@ func (manager *Manager) withObjects(ctx context.Context, database string, req sc
 		}
 	}
 }
+
+// Iterate through all the extensions for a database
+func (manager *Manager) withExtensions(ctx context.Context, database string, req schema.ExtensionListRequest, fn func(ext *schema.Extension) error) (uint64, error) {
+	req.Offset = 0
+	req.Limit = types.Uint64Ptr(schema.ExtensionListLimit)
+
+	for {
+		var list schema.ExtensionList
+		if err := manager.conn.Remote(database).With("as", schema.ExtensionDef).List(ctx, &list, req); err != nil {
+			return 0, err
+		}
+
+		for _, ext := range list.Body {
+			if err := fn(&ext); err != nil {
+				return 0, err
+			}
+		}
+
+		// Determine if the next page is over the count
+		next := req.Offset + types.PtrUint64(req.Limit)
+		if next >= list.Count {
+			return list.Count, nil
+		} else {
+			req.Offset = next
+		}
+	}
+}

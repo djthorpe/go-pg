@@ -20,7 +20,9 @@ type SchemaCommands struct {
 }
 
 type ListSchemaCommand struct {
-	Database string `name:"database" short:"d" help:"Filter by database name"`
+	Database string  `name:"database" short:"d" help:"Filter by database name"`
+	Offset   uint64  `name:"offset" help:"Offset for pagination"`
+	Limit    *uint64 `name:"limit" help:"Limit for pagination"`
 }
 
 type GetSchemaCommand struct {
@@ -57,7 +59,7 @@ func (cmd *ListSchemaCommand) Run(ctx *Globals) error {
 	}
 
 	// List schemas
-	schemas, err := client.ListSchemas(ctx.ctx, cmd.Database)
+	schemas, err := client.ListSchemas(ctx.ctx, cmd.Database, httpclient.WithOffsetLimit(cmd.Offset, cmd.Limit))
 	if err != nil {
 		return err
 	}

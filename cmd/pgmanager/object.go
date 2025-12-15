@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+
+	// Packages
+	httpclient "github.com/djthorpe/go-pg/pkg/manager/httpclient"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -13,9 +16,11 @@ type ObjectCommands struct {
 }
 
 type ListObjectsCommand struct {
-	Database  string `name:"database" short:"d" help:"Filter by database name"`
-	Namespace string `name:"schema" short:"s" help:"Filter by schema (namespace) name"`
-	Type      string `name:"type" short:"t" help:"Filter by object type (TABLE, VIEW, INDEX, SEQUENCE, etc.)"`
+	Database  string  `name:"database" short:"d" help:"Filter by database name"`
+	Namespace string  `name:"schema" short:"s" help:"Filter by schema (namespace) name"`
+	Type      string  `name:"type" short:"t" help:"Filter by object type (TABLE, VIEW, INDEX, SEQUENCE, etc.)"`
+	Offset    uint64  `name:"offset" help:"Offset for pagination"`
+	Limit     *uint64 `name:"limit" help:"Limit for pagination"`
 }
 
 type GetObjectCommand struct {
@@ -34,7 +39,7 @@ func (cmd *ListObjectsCommand) Run(ctx *Globals) error {
 	}
 
 	// List objects
-	objects, err := client.ListObjects(ctx.ctx, cmd.Database, cmd.Namespace)
+	objects, err := client.ListObjects(ctx.ctx, cmd.Database, cmd.Namespace, httpclient.WithOffsetLimit(cmd.Offset, cmd.Limit))
 	if err != nil {
 		return err
 	}

@@ -33,11 +33,14 @@ type Globals struct {
 
 type CLI struct {
 	Globals
+	ConnectionCommands
 	DatabaseCommands
+	ExtensionCommands
 	RoleCommands
 	SchemaCommands
 	ObjectCommands
 	ServerCommands
+	TablespaceCommands
 }
 
 ///////////////////////////////////////////////////////////////////////////////

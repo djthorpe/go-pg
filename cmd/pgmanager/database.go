@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	// Packages
+	httpclient "github.com/djthorpe/go-pg/pkg/manager/httpclient"
 	schema "github.com/djthorpe/go-pg/pkg/manager/schema"
 )
 
@@ -18,7 +19,10 @@ type DatabaseCommands struct {
 	UpdateDatabase UpdateDatabaseCommand `cmd:"" name:"update-database" help:"Update database."`
 }
 
-type ListDatabaseCommand struct{}
+type ListDatabaseCommand struct {
+	Offset uint64  `name:"offset" help:"Offset for pagination"`
+	Limit  *uint64 `name:"limit" help:"Limit for pagination"`
+}
 
 type GetDatabaseCommand struct {
 	Name string `arg:"" name:"name" help:"Database name"`
@@ -51,7 +55,7 @@ func (cmd *ListDatabaseCommand) Run(ctx *Globals) error {
 	}
 
 	// List databases
-	databases, err := client.ListDatabases(ctx.ctx)
+	databases, err := client.ListDatabases(ctx.ctx, httpclient.WithOffsetLimit(cmd.Offset, cmd.Limit))
 	if err != nil {
 		return err
 	}

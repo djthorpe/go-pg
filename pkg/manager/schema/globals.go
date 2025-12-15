@@ -24,6 +24,7 @@ const (
 	ObjectListLimit     = 100
 	ConnectionListLimit = 100
 	TablespaceListLimit = 100
+	ExtensionListLimit  = 100
 )
 
 const (

@@ -76,6 +76,38 @@ func WithType(v *string) Opt {
 	return OptSet("type", types.PtrString(v))
 }
 
+func WithInstalled(v *bool) Opt {
+	return func(o *opt) error {
+		if v == nil {
+			o.Del("installed")
+		} else if *v {
+			o.Set("installed", "true")
+		} else {
+			o.Set("installed", "false")
+		}
+		return nil
+	}
+}
+
+func OptDatabase(v string) Opt {
+	return OptSet("database", v)
+}
+
+func OptRole(v string) Opt {
+	return OptSet("role", v)
+}
+
+func OptState(v string) Opt {
+	return OptSet("state", v)
+}
+
+func OptCascade(v bool) Opt {
+	if v {
+		return OptSet("cascade", "true")
+	}
+	return OptSet("cascade", "")
+}
+
 func OptSet(k, v string) Opt {
 	return func(o *opt) error {
 		if v == "" {

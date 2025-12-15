@@ -7,7 +7,7 @@ import (
 	// Packages
 	pg "github.com/djthorpe/go-pg"
 	schema "github.com/djthorpe/go-pg/pkg/manager/schema"
-	"github.com/mutablelogic/go-server/pkg/types"
+	types "github.com/mutablelogic/go-server/pkg/types"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	// Packages
+	httpclient "github.com/djthorpe/go-pg/pkg/manager/httpclient"
 	schema "github.com/djthorpe/go-pg/pkg/manager/schema"
 )
 
@@ -18,7 +19,10 @@ type RoleCommands struct {
 	UpdateRole UpdateRoleCommand `cmd:"" name:"update-role" help:"Update role."`
 }
 
-type ListRoleCommand struct{}
+type ListRoleCommand struct {
+	Offset uint64  `name:"offset" help:"Offset for pagination"`
+	Limit  *uint64 `name:"limit" help:"Limit for pagination"`
+}
 
 type GetRoleCommand struct {
 	Name string `arg:"" name:"name" help:"Role name"`
@@ -74,7 +78,7 @@ func (cmd *ListRoleCommand) Run(ctx *Globals) error {
 	}
 
 	// List roles
-	roles, err := client.ListRoles(ctx.ctx)
+	roles, err := client.ListRoles(ctx.ctx, httpclient.WithOffsetLimit(cmd.Offset, cmd.Limit))
 	if err != nil {
 		return err
 	}
