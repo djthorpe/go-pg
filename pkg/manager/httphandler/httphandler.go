@@ -18,6 +18,7 @@ func RegisterHandlers(router *http.ServeMux, prefix string, manager *manager.Man
 	RegisterConnectionHandlers(router, prefix, manager)
 	RegisterDatabaseHandlers(router, prefix, manager)
 	RegisterExtensionHandlers(router, prefix, manager)
+	RegisterMetricsHandler(router, prefix, manager)
 	RegisterObjectHandlers(router, prefix, manager)
 	RegisterReplicationSlotHandlers(router, prefix, manager)
 	RegisterRoleHandlers(router, prefix, manager)
