@@ -43,13 +43,13 @@ func ingest(ctx context.Context, url string, conn pg.Conn) (int, error) {
 	// Read the response body into a buffer
 	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return n, fmt.Errorf("Failed to read response body: %w", err)
+		return n, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// Create a zip reader from the buffer
 	zReader, err := zip.NewReader(bytes.NewReader(buf), int64(len(buf)))
 	if err != nil {
-		return n, fmt.Errorf("Failed to create zip reader: %w", err)
+		return n, fmt.Errorf("failed to create zip reader: %w", err)
 	}
 
 	// Iterate through each file in the zip archive
@@ -64,7 +64,7 @@ func ingest(ctx context.Context, url string, conn pg.Conn) (int, error) {
 		log.Print("Processing file:", file.Name)
 		zf, err := file.Open()
 		if err != nil {
-			return n, fmt.Errorf("Failed to open zip file: %w", err)
+			return n, fmt.Errorf("failed to open zip file: %w", err)
 		}
 		defer zf.Close()
 

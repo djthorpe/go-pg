@@ -78,7 +78,7 @@ func (list NameList) Select(bind *pg.Bind, op pg.Op) (string, error) {
 	case pg.List:
 		return `SELECT id, name, gender, frequency, year FROM names`, nil
 	default:
-		return "", fmt.Errorf("Unsupported operation: %q", op)
+		return "", fmt.Errorf("unsupported operation: %q", op)
 	}
 }
 
@@ -91,7 +91,7 @@ func (obj Name) Select(bind *pg.Bind, op pg.Op) (string, error) {
 	case pg.Update:
 		return `UPDATE names SET @patch WHERE id=@id RETURNING id, name, gender, frequency, year`, nil
 	default:
-		return "", fmt.Errorf("Unsupported operation: %q", op)
+		return "", fmt.Errorf("unsupported operation: %q", op)
 	}
 }
 
@@ -125,7 +125,7 @@ func (obj Name) Update(bind *pg.Bind) error {
 
 	// If nothing was patched, then return an error
 	if patch := bind.Join("patch", ", "); patch == "" {
-		return fmt.Errorf("No patch parameters")
+		return fmt.Errorf("no patch parameters")
 	} else {
 		bind.Set("patch", patch)
 	}

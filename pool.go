@@ -46,7 +46,7 @@ var _ PoolConn = (*poolconn)(nil)
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-// Create a new connection pool
+// NewPool creates a new connection pool to a PostgreSQL server.
 func NewPool(ctx context.Context, opts ...Opt) (PoolConn, error) {
 	o, err := apply(opts...)
 	if err != nil {

@@ -45,19 +45,19 @@ type Conn interface {
 	List(context.Context, Reader, Selector) error
 }
 
-// Operation type
+// Op represents a database operation type.
 type Op uint
 
-// Row scanner
+// Row is a pgx.Row for scanning query results.
 type Row pgx.Row
 
-// Bind a row to an object
+// Reader scans a database row into an object.
 type Reader interface {
 	// Scan row into a result
 	Scan(Row) error
 }
 
-// Bind a row to an object, and also count the number of rows
+// ListReader scans database rows and counts total results.
 type ListReader interface {
 	Reader
 
@@ -65,7 +65,7 @@ type ListReader interface {
 	ScanCount(Row) error
 }
 
-// Bind an object to bind parameters for inserting or updating
+// Writer binds object fields for insert or update operations.
 type Writer interface {
 	// Set bind parameters for an insert
 	Insert(*Bind) (string, error)
@@ -74,7 +74,7 @@ type Writer interface {
 	Update(*Bind) error
 }
 
-// Bind selection parameters for getting, updating or deleting
+// Selector binds parameters for get, update, or delete operations.
 type Selector interface {
 	// Set bind parameters for getting, updating or deleting
 	Select(*Bind, Op) (string, error)

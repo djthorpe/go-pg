@@ -15,7 +15,7 @@ type OffsetLimit struct {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// Bind the offset and limit SQL fragment to the bind object
+// Bind sets the offset and limit SQL fragment on the bind object.
 func (r *OffsetLimit) Bind(bind *Bind, max uint64) {
 	if (r.Limit != nil && *r.Limit > max) || r.Limit == nil {
 		r.Limit = &max
@@ -31,7 +31,7 @@ func (r *OffsetLimit) Bind(bind *Bind, max uint64) {
 	}
 }
 
-// Clamp the limit to the maximum length
+// Clamp restricts the limit to the maximum length.
 func (r *OffsetLimit) Clamp(len uint64) {
 	if r.Limit != nil {
 		*r.Limit = min(*r.Limit, len)

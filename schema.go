@@ -37,6 +37,7 @@ type exists struct {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
+// SchemaExists returns true if a schema with the given name exists.
 func SchemaExists(ctx context.Context, conn Conn, name string) (bool, error) {
 	var exists exists
 	if err := conn.With("schema", name).Get(ctx, &exists, exists); err != nil {
@@ -46,10 +47,12 @@ func SchemaExists(ctx context.Context, conn Conn, name string) (bool, error) {
 	}
 }
 
+// SchemaCreate creates a schema with the given name if it does not exist.
 func SchemaCreate(ctx context.Context, conn Conn, name string) error {
 	return conn.With("schema", name).Exec(ctx, schemaCreate)
 }
 
+// SchemaDrop drops a schema with the given name if it exists.
 func SchemaDrop(ctx context.Context, conn Conn, name string) error {
 	return conn.With("schema", name).Exec(ctx, schemaDrop)
 }

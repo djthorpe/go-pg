@@ -64,7 +64,7 @@ func apply(opts ...Opt) (*opt, error) {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// Set connection pool by URL
+// WithURL sets connection parameters from a PostgreSQL URL.
 func WithURL(value string) Opt {
 	return func(o *opt) error {
 		url, err := parseUrl(value)
@@ -90,8 +90,8 @@ func WithURL(value string) Opt {
 	}
 }
 
-// Set connection pool username and password. If the database name is not set,
-// then the username will be used as the default database name.
+// WithCredentials sets the connection pool username and password. If the database
+// name is not set, then the username will be used as the default database name.
 func WithCredentials(user, password string) Opt {
 	return func(o *opt) error {
 		if user != "" {
@@ -110,7 +110,7 @@ func WithCredentials(user, password string) Opt {
 	}
 }
 
-// Set the database name for the connection. If the user name is not set,
+// WithDatabase sets the database name for the connection. If the user name is not set,
 // then the database name will be used as the user name.
 func WithDatabase(name string) Opt {
 	return func(o *opt) error {
@@ -126,7 +126,7 @@ func WithDatabase(name string) Opt {
 	}
 }
 
-// Set the address (host) or (host:port) for the connection
+// WithAddr sets the address (host) or (host:port) for the connection.
 func WithAddr(addr string) Opt {
 	return func(o *opt) error {
 		if !strings.Contains(addr, ":") {
@@ -139,8 +139,8 @@ func WithAddr(addr string) Opt {
 	}
 }
 
-// Set the hostname and port for the connection. If the port is not set, then
-// the default port 5432 will be used.
+// WithHostPort sets the hostname and port for the connection. If the port is not set,
+// then the default port 5432 will be used.
 func WithHostPort(host, port string) Opt {
 	return func(o *opt) error {
 		if host != "" {
@@ -153,9 +153,8 @@ func WithHostPort(host, port string) Opt {
 	}
 }
 
-// Set the postgresql SSL mode. Valid values are "disable", "allow", "prefer",
-// "require",  "verify-ca", "verify-full". See
-// https://www.postgresql.org/docs/current/libpq-ssl.html for more information.
+// WithSSLMode sets the PostgreSQL SSL mode. Valid values are "disable", "allow",
+// "prefer", "require", "verify-ca", "verify-full".
 func WithSSLMode(mode string) Opt {
 	return func(o *opt) error {
 		if mode != "" {
@@ -165,9 +164,7 @@ func WithSSLMode(mode string) Opt {
 	}
 }
 
-// Set the trace function for the connection pool. The signature of the trace
-// function is func(query string, args any, err error) and is called for every
-// query executed by the connection pool.
+// WithTrace sets the trace function for the connection pool.
 func WithTrace(fn TraceFn) Opt {
 	return func(o *opt) error {
 		o.TraceFn = fn
@@ -175,7 +172,7 @@ func WithTrace(fn TraceFn) Opt {
 	}
 }
 
-// Set the bind variables for the connection pool
+// WithBind sets a bind variable for the connection pool.
 func WithBind(k string, v any) Opt {
 	return func(o *opt) error {
 		o.bind.Set(k, v)

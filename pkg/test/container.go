@@ -24,7 +24,7 @@ type Container struct {
 //////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-// Create a new container with the given name and image, and additional options
+// NewContainer creates a new container with the given name and image.
 func NewContainer(ctx context.Context, name, image string, opt ...Opt) (*Container, error) {
 	// The name has _unixtime appended to it
 	name = fmt.Sprintf("%s_%v", name, time.Now().Unix())

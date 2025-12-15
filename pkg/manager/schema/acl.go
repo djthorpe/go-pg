@@ -92,7 +92,7 @@ var (
 /////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-// Create a new ACLItem from a postgresql ACL string
+// NewACLItem creates a new ACLItem from a PostgreSQL ACL string.
 func NewACLItem(v string) (*ACLItem, error) {
 	tuples := reAclItem.FindStringSubmatch(v)
 	if len(tuples) != 4 {
@@ -105,7 +105,7 @@ func NewACLItem(v string) (*ACLItem, error) {
 	}, nil
 }
 
-// Parse an ACLItem from a command-line flag, like
+// ParseACLItem parses an ACLItem from a command-line flag, like
 // <role>:<priv>,<priv>,<priv>...
 func ParseACLItem(v string) (*ACLItem, error) {
 	item := new(ACLItem)
@@ -127,32 +127,32 @@ func (a ACLItem) WithPriv(priv ...string) *ACLItem {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// Grant access privileges to a database
+// GrantDatabase grants access privileges to a database.
 func (acl ACLItem) GrantDatabase(ctx context.Context, conn pg.Conn, name string) error {
 	return acl.exec(ctx, conn.With("type", "DATABASE", "name", name, "granted_by", ""), acl.Role, aclGrant)
 }
 
-// Revoke access privileges to a database
+// RevokeDatabase revokes access privileges from a database.
 func (acl ACLItem) RevokeDatabase(ctx context.Context, conn pg.Conn, name string) error {
 	return acl.exec(ctx, conn.With("type", "DATABASE", "name", name, "granted_by", ""), acl.Role, aclRevoke)
 }
 
-// Grant access privileges to a schema
+// GrantSchema grants access privileges to a schema.
 func (acl ACLItem) GrantSchema(ctx context.Context, conn pg.Conn, name string) error {
 	return acl.exec(ctx, conn.With("type", "SCHEMA", "name", name, "granted_by", ""), acl.Role, aclGrant)
 }
 
-// Revoke access privileges to a schema
+// RevokeSchema revokes access privileges from a schema.
 func (acl ACLItem) RevokeSchema(ctx context.Context, conn pg.Conn, name string) error {
 	return acl.exec(ctx, conn.With("type", "SCHEMA", "name", name, "granted_by", ""), acl.Role, aclRevoke)
 }
 
-// Grant access privileges to a tablespace
+// GrantTablespace grants access privileges to a tablespace.
 func (acl ACLItem) GrantTablespace(ctx context.Context, conn pg.Conn, name string) error {
 	return acl.exec(ctx, conn.With("type", "TABLESPACE", "name", name, "granted_by", ""), acl.Role, aclGrant)
 }
 
-// Revoke access privileges to a tablespace
+// RevokeTablespace revokes access privileges from a tablespace.
 func (acl ACLItem) RevokeTablespace(ctx context.Context, conn pg.Conn, name string) error {
 	return acl.exec(ctx, conn.With("type", "TABLESPACE", "name", name, "granted_by", ""), acl.Role, aclRevoke)
 }
@@ -367,7 +367,7 @@ func (acl *ACLList) Find(role string) *ACLItem {
 	return nil
 }
 
-// Determine if has ALL privileges
+// IsAll returns true if the ACL has ALL privileges.
 func (acl ACLItem) IsAll() bool {
 	return slices.Contains(acl.Priv, privAll)
 }

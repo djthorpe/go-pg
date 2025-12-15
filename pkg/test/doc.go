@@ -1,7 +1,8 @@
-// The `test` package supports running unit tests with containerized supporting
-// services. This is useful for testing that require external services, such as
-// databases, message brokers, etc. The `test` package provides a simple API to
-// create and manage containers.
+// Package test provides utilities for integration testing with PostgreSQL
+// using testcontainers.
+//
+// It automatically starts a PostgreSQL container, creates a connection pool,
+// and cleans up after tests complete.
 //
 // For example, in order to test postgres integration tests, use the following
 // boilerplate for your tests:

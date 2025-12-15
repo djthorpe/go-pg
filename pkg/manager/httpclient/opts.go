@@ -15,7 +15,7 @@ type opt struct {
 	url.Values
 }
 
-// An Option to set on the client
+// Opt is an option to set on the client request.
 type Opt func(*opt) error
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,7 +35,7 @@ func applyOpts(opts ...Opt) (*opt, error) {
 ////////////////////////////////////////////////////////////////////////////////
 // OPTIONS
 
-// Set offset and limit
+// WithOffsetLimit sets offset and limit query parameters.
 func WithOffsetLimit(offset uint64, limit *uint64) Opt {
 	return func(o *opt) error {
 		if offset > 0 {

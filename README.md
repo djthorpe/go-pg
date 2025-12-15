@@ -1,12 +1,14 @@
 # go-pg
 
-Postgresql Support for Go. This module provides:
+Postgresql Support for Go, built on top of [pgx](https://github.com/jackc/pgx). This module provides:
 
 * Binding SQL statements to named arguments;
 * Support for mapping go structures to SQL tables, and vice versa;
 * Easy semantics for Insert, Delete, Update, Get and List operations;
 * Bulk insert operations and transactions;
-* Support for tracing and observability.
+* Support for tracing and observability;
+* [PostgreSQL Manager](pkg/manager/README.md) for server administration with REST API and Prometheus metrics;
+* [Testing utilities](pkg/test/README.md) for integration testing with testcontainers.
 
 Documentation: <https://pkg.go.dev/github.com/djthorpe/go-pg>
 
@@ -100,6 +102,9 @@ func main() {
 
 The options that can be passed to `pg.NewPool` are:
 
+* `WithURL(string)` - Set connection parameters from a PostgreSQL URL in the format
+  `postgres://user:password@host:port/database?sslmode=disable`. Query parameters are
+  passed as additional connection options.
 * `WithCredentials(string,string)` - Set connection pool username and password.
   If the database name is not set, then the username will be used as the default database name.
 * `WithDatabase(string)` - Set the database name for the connection. If the user name is not set,
@@ -188,7 +193,7 @@ func main() {
 ## Implementing List
 
 You may wish to use paging to list rows from a table. The `List` operation is used to
-list rows from a table, with offset and limit parameters. 
+list rows from a table, with offset and limit parameters.
 The http handler may look like this:
 
 ```go
@@ -256,16 +261,116 @@ the table. Always implement the `offsetlimit` as a bind variable.
 
 ## Implementing Insert
 
-TODO
+To insert a row into a table, implement the `Writer` interface:
+
+```go
+type MyObject struct {
+  Id   int
+  Name string
+}
+
+// Writer - bind insert parameters
+func (obj MyObject) Insert(bind *pg.Bind) (string, error) {
+  bind.Set("name", obj.Name)
+  return `INSERT INTO mytable (name) VALUES (@name) RETURNING id, name`, nil
+}
+
+// Reader - scan the returned row
+func (obj *MyObject) Scan(row pg.Row) error {
+  return row.Scan(&obj.Id, &obj.Name)
+}
+
+// Insert a row
+func main() {
+  // ...
+  obj := MyObject{Name: "hello"}
+  if err := conn.Insert(ctx, &obj, obj); err != nil {
+    panic(err)
+  }
+  fmt.Println("Inserted with ID:", obj.Id)
+}
+```
+
+The `RETURNING` clause allows you to get the inserted row back, including any auto-generated values like serial IDs.
 
 ## Implementing Patch
 
-TODO
+To update rows in a table, implement both `Selector` (to identify rows) and `Writer` (for update values):
+
+```go
+type MyObject struct {
+  Id   int
+  Name string
+}
+
+// Selector - identify rows to update
+func (obj MyObject) Select(bind *pg.Bind, op pg.Op) (string, error) {
+  switch op {
+  case pg.Update:
+    bind.Set("id", obj.Id)
+    return `UPDATE mytable SET name = @name WHERE id = @id RETURNING id, name`, nil
+  }
+  return "", pg.ErrNotImplemented
+}
+
+// Writer - bind update parameters
+func (obj MyObject) Update(bind *pg.Bind) error {
+  bind.Set("name", obj.Name)
+  return nil
+}
+
+// Reader - scan the returned row
+func (obj *MyObject) Scan(row pg.Row) error {
+  return row.Scan(&obj.Id, &obj.Name)
+}
+
+// Update a row
+func main() {
+  // ...
+  obj := MyObject{Id: 1, Name: "updated"}
+  if err := conn.Update(ctx, &obj, obj); err != nil {
+    panic(err)
+  }
+}
+```
 
 ## Implementing Delete
 
-TODO
+To delete rows from a table, implement the `Selector` interface:
 
+```go
+type MyObject struct {
+  Id   int
+  Name string
+}
+
+// Selector - identify rows to delete
+func (obj MyObject) Select(bind *pg.Bind, op pg.Op) (string, error) {
+  switch op {
+  case pg.Delete:
+    bind.Set("id", obj.Id)
+    return `DELETE FROM mytable WHERE id = @id RETURNING id, name`, nil
+  }
+  return "", pg.ErrNotImplemented
+}
+
+// Reader - optionally scan deleted rows
+func (obj *MyObject) Scan(row pg.Row) error {
+  return row.Scan(&obj.Id, &obj.Name)
+}
+
+// Delete a row
+func main() {
+  // ...
+  var deleted MyObject
+  if err := conn.Delete(ctx, &deleted, MyObject{Id: 1}); err != nil {
+    panic(err)
+  }
+  fmt.Println("Deleted:", deleted.Name)
+}
+```
+
+The `RETURNING` clause is optional but useful for confirming what was deleted.
 
 ## Transactions
 
@@ -290,18 +395,100 @@ the transaction will be committed. Transactions can be nested.
 
 ## Notify and Listen
 
-TODO
+PostgreSQL supports asynchronous notifications via `NOTIFY` and `LISTEN`. Use `pg.NewListener` to subscribe to channels:
+
+```go
+import pg "github.com/djthorpe/go-pg"
+
+// Create a listener
+listener, err := pg.NewListener(ctx, pool, "my_channel")
+if err != nil {
+  panic(err)
+}
+defer listener.Close()
+
+// Listen for notifications
+for {
+  select {
+  case notification := <-listener.C():
+    fmt.Printf("Channel: %s, Payload: %s\n", notification.Channel, notification.Payload)
+  case <-ctx.Done():
+    return
+  }
+}
+```
+
+To send a notification from another connection:
+
+```go
+if err := pool.Exec(ctx, `NOTIFY my_channel, 'hello world'`); err != nil {
+  panic(err)
+}
+```
 
 ## Schema Support
 
-* Checking if a schema exists
-* Creating a schema
-* Dropping a schema
+The package provides convenience functions for managing PostgreSQL schemas:
+
+```go
+import pg "github.com/djthorpe/go-pg"
+
+// Check if a schema exists
+exists, err := pg.SchemaExists(ctx, conn, "myschema")
+
+// Create a schema (IF NOT EXISTS)
+err := pg.SchemaCreate(ctx, conn, "myschema")
+
+// Drop a schema (IF EXISTS, CASCADE)
+err := pg.SchemaDrop(ctx, conn, "myschema")
+```
 
 ## Error Handing and Tracing
 
-TODO
+The package provides typed errors for common PostgreSQL conditions:
+
+```go
+import pg "github.com/djthorpe/go-pg"
+
+if err := conn.Get(ctx, &obj, req); err != nil {
+  if errors.Is(err, pg.ErrNotFound) {
+    // Row not found
+  } else if errors.Is(err, pg.ErrDuplicate) {
+    // Unique constraint violation
+  } else if errors.Is(err, pg.ErrBadParameter) {
+    // Invalid parameter
+  } else {
+    // Other error
+  }
+}
+```
+
+To enable query tracing, pass a trace function when creating the pool:
+
+```go
+pool, err := pg.NewPool(ctx,
+  pg.WithHostPort(host, port),
+  pg.WithCredentials(user, pass),
+  pg.WithTrace(func(ctx context.Context, sql string, args any, err error) {
+    if err != nil {
+      log.Printf("ERROR: %s: %v", sql, err)
+    } else {
+      log.Printf("SQL: %s args=%v", sql, args)
+    }
+  }),
+)
+```
+
+The trace function is called for every query executed through the connection pool.
 
 ## Testing Support
 
-TODO
+The `pkg/test` package provides utilities for integration testing with PostgreSQL using testcontainers.
+
+See [pkg/test/README.md](pkg/test/README.md) for documentation.
+
+## PostgreSQL Manager
+
+The `pkg/manager` package provides a comprehensive API for managing PostgreSQL server resources including roles, databases, schemas, tables, connections, replication slots, and more. It includes a REST API with Prometheus metrics.
+
+See [pkg/manager/README.md](pkg/manager/README.md) for documentation.

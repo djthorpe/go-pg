@@ -20,7 +20,7 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-// Create a new postgresql database and pool, using a unique container name
+// NewPgxContainer creates a new PostgreSQL container and connection pool.
 func NewPgxContainer(ctx context.Context, name string, verbose bool, tracer pg.TraceFn) (*Container, pg.PoolConn, error) {
 	// Create a new container with postgresql package
 	container, err := NewContainer(ctx, name, pgxContainer,
