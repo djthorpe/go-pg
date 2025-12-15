@@ -4,7 +4,7 @@ import (
 	"context"
 
 	// Packages
-	schema "github.com/djthorpe/go-pg/pkg/manager/schema"
+	schema "github.com/mutablelogic/go-pg/pkg/manager/schema"
 	client "github.com/mutablelogic/go-client"
 )
 

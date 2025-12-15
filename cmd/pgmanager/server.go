@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	// Packages
-	"github.com/djthorpe/go-pg"
-	"github.com/djthorpe/go-pg/pkg/manager"
-	"github.com/djthorpe/go-pg/pkg/manager/httphandler"
+	"github.com/mutablelogic/go-pg"
+	"github.com/mutablelogic/go-pg/pkg/manager"
+	"github.com/mutablelogic/go-pg/pkg/manager/httphandler"
 	"github.com/mutablelogic/go-server/pkg/httpresponse"
 	"github.com/mutablelogic/go-server/pkg/httpserver"
 )

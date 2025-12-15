@@ -10,8 +10,8 @@ import (
 	"time"
 
 	// Packages
-	pg "github.com/djthorpe/go-pg"
-	manager "github.com/djthorpe/go-pg/pkg/manager"
+	pg "github.com/mutablelogic/go-pg"
+	manager "github.com/mutablelogic/go-pg/pkg/manager"
 )
 
 /////////////////////////////////////////////////////////////////////

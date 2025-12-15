@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	// Packages
-	pg "github.com/djthorpe/go-pg"
-	types "github.com/djthorpe/go-pg/pkg/types"
+	pg "github.com/mutablelogic/go-pg"
+	types "github.com/mutablelogic/go-pg/pkg/types"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	// Packages
-	types "github.com/djthorpe/go-pg/pkg/types"
+	types "github.com/mutablelogic/go-pg/pkg/types"
 	pgxpool "github.com/jackc/pgx/v5/pgxpool"
 )
 

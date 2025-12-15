@@ -11,7 +11,7 @@ RUN OS=${OS} ARCH=${ARCH} make cmd/pgmanager
 
 # Runtime stage
 FROM --platform=${OS}/${ARCH} debian:bookworm-slim
-ARG SOURCE=github.com/djthorpe/go-pg
+ARG SOURCE=github.com/mutablelogic/go-pg
 COPY --from=builder /usr/src/app/build/ /usr/local/bin/
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates && \
