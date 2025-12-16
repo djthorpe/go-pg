@@ -9,8 +9,8 @@ import (
 
 	// Packages
 	kong "github.com/alecthomas/kong"
-	httpclient "github.com/mutablelogic/go-pg/pkg/manager/httpclient"
 	client "github.com/mutablelogic/go-client"
+	httpclient "github.com/mutablelogic/go-pg/pkg/manager/httpclient"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,7 @@ type Globals struct {
 	// HTTP server options
 	HTTP struct {
 		Prefix string `name:"prefix" help:"HTTP path prefix" default:"/api/v1"`
-		Listen string `name:"http" help:"HTTP Listen address" default:":8080"`
+		Addr   string `name:"addr" env:"PG_ADDR" help:"HTTP Listen address" default:":8080"`
 	} `embed:"" prefix:"http."`
 
 	// Private fields
@@ -44,6 +44,7 @@ type CLI struct {
 	SettingCommands
 	StatementCommands
 	TablespaceCommands
+	VersionCommands
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,7 +69,7 @@ func main() {
 // PRIVATE METHODS
 
 func (g *Globals) Client() (*httpclient.Client, error) {
-	host, port, err := net.SplitHostPort(g.HTTP.Listen)
+	host, port, err := net.SplitHostPort(g.HTTP.Addr)
 	if err != nil {
 		return nil, err
 	}
