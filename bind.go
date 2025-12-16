@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	// Packages
-	pgx "github.com/jackc/pgx/v5"
 	types "github.com/mutablelogic/go-pg/pkg/types"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,14 +56,8 @@ func (bind *Bind) Copy(pairs ...any) *Bind {
 		return nil
 	}
 
-	// Lock before copying
-	varsCopy := func() pgx.NamedArgs {
-		bind.RLock()
-		defer bind.RUnlock()
-		c := make(pgx.NamedArgs, len(bind.vars)+len(pairs)>>1)
-		maps.Copy(c, bind.vars)
-		return c
-	}()
+	varsCopy := make(pgx.NamedArgs, len(bind.vars)+len(pairs)>>1)
+	maps.Copy(varsCopy, bind.vars)
 
 	for i := 0; i < len(pairs); i += 2 {
 		if key, ok := pairs[i].(string); !ok || key == "" {
