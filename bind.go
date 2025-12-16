@@ -60,7 +60,7 @@ func (bind *Bind) Copy(pairs ...any) *Bind {
 	varsCopy := func() pgx.NamedArgs {
 		bind.RLock()
 		defer bind.RUnlock()
-		c := make(pgx.NamedArgs, len(bind.vars)+len(pairs)>>1)
+		c := make(pgx.NamedArgs, len(bind.vars)+(len(pairs)>>1))
 		maps.Copy(c, bind.vars)
 		return c
 	}()
