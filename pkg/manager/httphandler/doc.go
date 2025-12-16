@@ -3,7 +3,7 @@
 //
 // Register all handlers with an http.ServeMux:
 //
-//	httphandler.RegisterHandlers(mux, "/api/v1", mgr)
+//	httphandler.RegisterBackendHandlers(mux, "/api/v1", mgr)
 //
 // This registers endpoints for roles, databases, schemas, objects, tablespaces,
 // extensions, connections, settings, statements, replication slots, and

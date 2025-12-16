@@ -7,7 +7,8 @@ ARG ARCH=amd64
 FROM --platform=${OS}/${ARCH} golang:1.24 AS builder
 WORKDIR /usr/src/app
 COPY . .
-RUN OS=${OS} ARCH=${ARCH} make cmd/pgmanager
+RUN go install github.com/djthorpe/go-wasmbuild/cmd/wasmbuild@latest && \
+    OS=${OS} ARCH=${ARCH} make pgmanager
 
 # Runtime stage
 FROM --platform=${OS}/${ARCH} debian:bookworm-slim
@@ -21,5 +22,5 @@ RUN apt-get update && \
 LABEL org.opencontainers.image.source=${SOURCE}
 
 # Entrypoint when running the server
-EXPOSE 80 443
+EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/pgmanager"]
