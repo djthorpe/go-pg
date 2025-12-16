@@ -92,12 +92,12 @@ func (cmd *RunServer) Run(ctx *Globals) error {
 	}
 
 	// Create a HTTP server
-	server, err := httpserver.New(ctx.HTTP.Listen, router, tlsconfig)
+	server, err := httpserver.New(ctx.HTTP.Addr, router, tlsconfig)
 	if err != nil {
 		return err
 	}
 
 	// Run the server
-	fmt.Println("Starting server on", ctx.HTTP.Listen)
+	fmt.Println("Starting server on", ctx.HTTP.Addr)
 	return server.Run(ctx.ctx)
 }
