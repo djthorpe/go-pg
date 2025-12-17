@@ -10,7 +10,6 @@ import (
 	"github.com/mutablelogic/go-pg"
 	"github.com/mutablelogic/go-pg/pkg/manager"
 	"github.com/mutablelogic/go-pg/pkg/manager/httphandler"
-	"github.com/mutablelogic/go-server/pkg/httpresponse"
 	"github.com/mutablelogic/go-server/pkg/httpserver"
 )
 
@@ -75,12 +74,8 @@ func (cmd *RunServer) Run(ctx *Globals) error {
 
 	// Register HTTP handlers
 	router := http.NewServeMux()
-	httphandler.RegisterHandlers(router, ctx.HTTP.Prefix, manager)
-
-	// Catch all handler returns a "not found" error
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_ = httpresponse.Error(w, httpresponse.ErrNotFound, r.URL.String())
-	})
+	httphandler.RegisterBackendHandlers(router, ctx.HTTP.Prefix, manager)
+	httphandler.RegisterFrontendHandler(router, "")
 
 	// Create a TLS config
 	var tlsconfig *tls.Config

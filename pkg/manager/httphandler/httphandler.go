@@ -14,7 +14,7 @@ import (
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func RegisterHandlers(router *http.ServeMux, prefix string, manager *manager.Manager) {
+func RegisterBackendHandlers(router *http.ServeMux, prefix string, manager *manager.Manager) {
 	RegisterConnectionHandlers(router, prefix, manager)
 	RegisterDatabaseHandlers(router, prefix, manager)
 	RegisterExtensionHandlers(router, prefix, manager)
