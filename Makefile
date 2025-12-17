@@ -4,7 +4,6 @@ DOCKER ?= $(shell which docker 2>/dev/null)
 WASMBUILD ?= $(shell which wasmbuild 2>/dev/null)
 BUILDDIR ?= build
 CMDDIR=$(wildcard cmd/*)
-WASMDIR=$(wildcard wasm/*)
 
 # Set OS and Architecture
 ARCH ?= $(shell arch | tr A-Z a-z | sed 's/x86_64/amd64/' | sed 's/i386/amd64/' | sed 's/armv7l/arm/' | sed 's/aarch64/arm64/')
@@ -35,17 +34,10 @@ $(CMDDIR): go-dep mkdir
 	@rm -rf ${BUILDDIR}/$(shell basename $@)
 	@$(GO) build -tags frontend $(BUILD_FLAGS) -o ${BUILDDIR}/$(shell basename $@) ./$@
 
-# Rules for building WASM (kept for standalone wasm builds)
-.PHONY: $(WASMDIR)
-$(WASMDIR): go-dep wasmbuild-dep tidy mkdir
-	@echo 'wasmbuild $@'
-	@${WASMBUILD} build --go-flags='$(BUILD_FLAGS)' -o ${BUILDDIR}/wasm/$(shell basename $@) ./$@ && \
-		mv ${BUILDDIR}/wasm/$(shell basename $@)/wasm_exec.html ${BUILDDIR}/wasm/$(shell basename $@)/index.html
-
 # Build pgmanager with embedded frontend
 .PHONY: pgmanager
 pgmanager: go-dep wasmbuild-dep tidy mkdir
-	@echo 'generate frontend'
+	@echo 'go generate frontend'
 	@$(GO) generate -tags frontend ./pkg/manager/httphandler/...
 	@echo 'go build cmd/pgmanager'
 	@$(GO) build -tags frontend $(BUILD_FLAGS) -o ${BUILDDIR}/pgmanager ./cmd/pgmanager
