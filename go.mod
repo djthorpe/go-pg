@@ -6,9 +6,11 @@ toolchain go1.24.2
 
 require (
 	github.com/alecthomas/kong v1.13.0
+	github.com/djthorpe/go-wasmbuild v0.0.1
 	github.com/docker/go-connections v0.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/mutablelogic/go-client v1.2.2
+	github.com/mutablelogic/go-pg/build/wasm/pgmanager v0.0.0-00010101000000-000000000000
 	github.com/mutablelogic/go-server v1.5.17
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
@@ -58,6 +60,7 @@ require (
 	github.com/moby/term v0.5.2 // indirect
 	github.com/morikuni/aec v1.1.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/mutablelogic/go-tokenizer v0.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -79,6 +82,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
@@ -91,3 +95,6 @@ require (
 
 // Redirect old module path to this module (for transitive dependencies)
 replace github.com/djthorpe/go-pg => ./
+
+// Frontend embedded files (local path, built by make wasm/pgmanager)
+replace github.com/mutablelogic/go-pg/build/wasm/pgmanager => ./build/wasm/pgmanager

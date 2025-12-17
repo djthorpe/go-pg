@@ -84,8 +84,11 @@ mkdir:
 	@install -d $(BUILDDIR)
 
 .PHONY: go-dep tidy
-tidy: 
+tidy: mkdir
 	@echo 'go tidy'
+	@install -d ${BUILDDIR}/wasm/pgmanager
+	@cp -n etc/embed.go ${BUILDDIR}/wasm/pgmanager/ 2>/dev/null || true
+	@echo 'module github.com/mutablelogic/go-pg/build/wasm/pgmanager' > ${BUILDDIR}/wasm/pgmanager/go.mod
 	@$(GO) mod tidy
 
 .PHONY: clean
