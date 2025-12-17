@@ -35,18 +35,20 @@ $(CMDDIR): go-dep mkdir
 	@rm -rf ${BUILDDIR}/$(shell basename $@)
 	@$(GO) build -tags frontend $(BUILD_FLAGS) -o ${BUILDDIR}/$(shell basename $@) ./$@
 
-# Rules for building
+# Rules for building WASM (kept for standalone wasm builds)
 .PHONY: $(WASMDIR)
-$(WASMDIR): go-dep wasmbuild-dep mkdir
+$(WASMDIR): go-dep wasmbuild-dep tidy mkdir
 	@echo 'wasmbuild $@'
-	@$(GO) get github.com/djthorpe/go-wasmbuild/pkg/bootstrap github.com/djthorpe/go-wasmbuild/pkg/bootstrap/extra github.com/djthorpe/go-wasmbuild/pkg/mvc
 	@${WASMBUILD} build --go-flags='$(BUILD_FLAGS)' -o ${BUILDDIR}/wasm/$(shell basename $@) ./$@ && \
-		mv ${BUILDDIR}/wasm/$(shell basename $@)/wasm_exec.html ${BUILDDIR}/wasm/$(shell basename $@)/index.html && \
-		cp etc/embed.go ${BUILDDIR}/wasm/$(shell basename $@)/
+		mv ${BUILDDIR}/wasm/$(shell basename $@)/wasm_exec.html ${BUILDDIR}/wasm/$(shell basename $@)/index.html
 
 # Build pgmanager with embedded frontend
 .PHONY: pgmanager
-pgmanager: wasm/pgmanager cmd/pgmanager
+pgmanager: go-dep wasmbuild-dep tidy mkdir
+	@echo 'generate frontend'
+	@$(GO) generate -tags frontend ./pkg/manager/httphandler/...
+	@echo 'go build cmd/pgmanager'
+	@$(GO) build -tags frontend $(BUILD_FLAGS) -o ${BUILDDIR}/pgmanager ./cmd/pgmanager
 
 # Build the docker image
 .PHONY: docker
@@ -84,11 +86,8 @@ mkdir:
 	@install -d $(BUILDDIR)
 
 .PHONY: go-dep tidy
-tidy: mkdir
+tidy:
 	@echo 'go tidy'
-	@install -d ${BUILDDIR}/wasm/pgmanager
-	@cp -n etc/embed.go ${BUILDDIR}/wasm/pgmanager/ 2>/dev/null || true
-	@echo 'module github.com/mutablelogic/go-pg/build/wasm/pgmanager' > ${BUILDDIR}/wasm/pgmanager/go.mod
 	@$(GO) mod tidy
 
 .PHONY: clean
