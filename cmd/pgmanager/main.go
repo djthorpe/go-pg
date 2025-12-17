@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 
 	// Packages
 	kong "github.com/alecthomas/kong"
@@ -69,9 +70,24 @@ func main() {
 // PRIVATE METHODS
 
 func (g *Globals) Client() (*httpclient.Client, error) {
+	scheme := "http"
 	host, port, err := net.SplitHostPort(g.HTTP.Addr)
 	if err != nil {
 		return nil, err
+	}
+
+	// Default host to localhost if empty (e.g., ":8080")
+	if host == "" {
+		host = "localhost"
+	}
+
+	// Parse port
+	portn, err := strconv.ParseUint(port, 10, 16)
+	if err != nil {
+		return nil, err
+	}
+	if portn == 443 {
+		scheme = "https"
 	}
 
 	// Client options
@@ -80,7 +96,6 @@ func (g *Globals) Client() (*httpclient.Client, error) {
 		opts = append(opts, client.OptTrace(os.Stderr, true))
 	}
 
-	// Create a client
-	url := fmt.Sprintf("http://%s:%s%s", host, port, g.HTTP.Prefix)
-	return httpclient.New(url, opts...)
+	// Create a client with the calculated endpoint
+	return httpclient.New(fmt.Sprintf("%s://%s:%v%s", scheme, host, portn, g.HTTP.Prefix), opts...)
 }
