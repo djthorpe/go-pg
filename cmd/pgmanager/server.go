@@ -7,10 +7,11 @@ import (
 	"net/http"
 
 	// Packages
-	"github.com/mutablelogic/go-pg"
-	"github.com/mutablelogic/go-pg/pkg/manager"
-	"github.com/mutablelogic/go-pg/pkg/manager/httphandler"
-	"github.com/mutablelogic/go-server/pkg/httpserver"
+	pg "github.com/mutablelogic/go-pg"
+	manager "github.com/mutablelogic/go-pg/pkg/manager"
+	httphandler "github.com/mutablelogic/go-pg/pkg/manager/httphandler"
+	version "github.com/mutablelogic/go-pg/pkg/version"
+	httpserver "github.com/mutablelogic/go-server/pkg/httpserver"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -22,6 +23,7 @@ type ServerCommands struct {
 
 type RunServer struct {
 	URL string `arg:"" name:"url" help:"Database URL" default:""`
+	UI  bool   `name:"ui" help:"Enable frontend UI" default:"false"`
 
 	// Postgres options
 	PG struct {
@@ -75,7 +77,7 @@ func (cmd *RunServer) Run(ctx *Globals) error {
 	// Register HTTP handlers
 	router := http.NewServeMux()
 	httphandler.RegisterBackendHandlers(router, ctx.HTTP.Prefix, manager)
-	httphandler.RegisterFrontendHandler(router, "")
+	httphandler.RegisterFrontendHandler(router, "", cmd.UI)
 
 	// Create a TLS config
 	var tlsconfig *tls.Config
@@ -93,6 +95,7 @@ func (cmd *RunServer) Run(ctx *Globals) error {
 	}
 
 	// Run the server
-	fmt.Println("Starting server on", ctx.HTTP.Addr)
+	fmt.Println(version.ExecName(), version.Version())
+	fmt.Println("Listening on", ctx.HTTP.Addr+ctx.HTTP.Prefix)
 	return server.Run(ctx.ctx)
 }
