@@ -23,6 +23,7 @@ type ServerCommands struct {
 
 type RunServer struct {
 	URL string `arg:"" name:"url" help:"Database URL" default:""`
+	UI  bool   `name:"ui" help:"Enable frontend UI" default:"false"`
 
 	// Postgres options
 	PG struct {
@@ -76,7 +77,7 @@ func (cmd *RunServer) Run(ctx *Globals) error {
 	// Register HTTP handlers
 	router := http.NewServeMux()
 	httphandler.RegisterBackendHandlers(router, ctx.HTTP.Prefix, manager)
-	httphandler.RegisterFrontendHandler(router, "")
+	httphandler.RegisterFrontendHandler(router, "", cmd.UI)
 
 	// Create a TLS config
 	var tlsconfig *tls.Config
