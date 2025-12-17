@@ -1,6 +1,10 @@
 package version
 
-import "runtime"
+import (
+	"os"
+	"path/filepath"
+	"runtime"
+)
 
 ///////////////////////////////////////////////////////////////////////////////
 // GLOBALS
@@ -15,6 +19,14 @@ var (
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
+
+func ExecName() string {
+	name, err := os.Executable()
+	if err != nil {
+		return "unknown"
+	}
+	return filepath.Base(name)
+}
 
 func Version() string {
 	if GitTag != "" {

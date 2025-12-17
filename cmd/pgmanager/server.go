@@ -7,10 +7,11 @@ import (
 	"net/http"
 
 	// Packages
-	"github.com/mutablelogic/go-pg"
-	"github.com/mutablelogic/go-pg/pkg/manager"
-	"github.com/mutablelogic/go-pg/pkg/manager/httphandler"
-	"github.com/mutablelogic/go-server/pkg/httpserver"
+	pg "github.com/mutablelogic/go-pg"
+	manager "github.com/mutablelogic/go-pg/pkg/manager"
+	httphandler "github.com/mutablelogic/go-pg/pkg/manager/httphandler"
+	version "github.com/mutablelogic/go-pg/pkg/version"
+	httpserver "github.com/mutablelogic/go-server/pkg/httpserver"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,6 +94,7 @@ func (cmd *RunServer) Run(ctx *Globals) error {
 	}
 
 	// Run the server
-	fmt.Println("Starting server on", ctx.HTTP.Addr)
+	fmt.Println(version.ExecName(), version.Version())
+	fmt.Println("Listening on", ctx.HTTP.Addr+ctx.HTTP.Prefix)
 	return server.Run(ctx.ctx)
 }
