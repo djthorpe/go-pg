@@ -108,6 +108,6 @@ go-dep:
 docker-dep:
 	@test -f "${DOCKER}" && test -x "${DOCKER}"  || (echo "Missing docker binary" && exit 1)
 
-.PHONE: wasmbuild-dep
+.PHONY: wasmbuild-dep
 wasmbuild-dep:
 	@test -f "${WASMBUILD}" && test -x "${WASMBUILD}"  || (echo "Missing wasmbuild binary" && exit 1)
